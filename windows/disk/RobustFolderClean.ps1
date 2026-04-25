@@ -77,49 +77,60 @@ function Read-TargetFolderPath {
     return $raw.Trim()
 }
 
-# --- Input collection ---
-$targetPath = Read-TargetFolderPath
-if ([string]::IsNullOrWhiteSpace($targetPath)) {
-    Write-Host '[ERROR] No target path entered.' -ForegroundColor Red
-    exit 1
-}
-
-if (-not (Test-Path -LiteralPath $targetPath -PathType Container)) {
-    Write-Host "[ERROR] Path not found or not a folder: $targetPath" -ForegroundColor Red
-    exit 1
-}
-
-Write-Host ""
-Write-Host "Wiping all contents of: $targetPath"
-Write-Host "Staging empty folder under $script:TempRoot"
-Write-Host ""
-
-$staging = $null
-try {
-    $staging = New-RobocopyStagingFolder
-    Write-Host "Running robocopy mirror (empty -> target)..."
-    $code = Invoke-RobocopyMirrorEmpty -EmptySource $staging -TargetPath $targetPath
-
-    if (-not (Test-RobocopySuccess -ExitCode $code)) {
-        Write-Host "[ERROR] robocopy exited with code $code (treat as failure)." -ForegroundColor Red
-        exit 1
+function Invoke-Main {
+    # --- Input collection ---
+    $targetPath = Read-TargetFolderPath
+    if ([string]::IsNullOrWhiteSpace($targetPath)) {
+        Write-Host '[ERROR] No target path entered.' -ForegroundColor Red
+        return 1
     }
 
-    Write-Host "robocopy finished (exit $code). Target folder left in place."
-    Write-Host '[SUCCESS] RobustFolderClean completed.'
-    exit 0
+    if (-not (Test-Path -LiteralPath $targetPath -PathType Container)) {
+        Write-Host "[ERROR] Path not found or not a folder: $targetPath" -ForegroundColor Red
+        return 1
+    }
+
+    Write-Host ""
+    Write-Host "Wiping all contents of: $targetPath"
+    Write-Host "Staging empty folder under $script:TempRoot"
+    Write-Host ""
+
+    $staging = $null
+    try {
+        $staging = New-RobocopyStagingFolder
+        Write-Host "Running robocopy mirror (empty -> target)..."
+        $code = Invoke-RobocopyMirrorEmpty -EmptySource $staging -TargetPath $targetPath
+
+        if (-not (Test-RobocopySuccess -ExitCode $code)) {
+            Write-Host "[ERROR] robocopy exited with code $code (treat as failure)." -ForegroundColor Red
+            return 1
+        }
+
+        Write-Host "robocopy finished (exit $code). Target folder left in place."
+        Write-Host '[SUCCESS] RobustFolderClean completed.'
+        return 0
+    }
+    catch {
+        Write-Host "[ERROR] $($_.Exception.Message)" -ForegroundColor Red
+        return 1
+    }
+    finally {
+        if ($staging) {
+            try {
+                Remove-RobocopyStagingFolder -StagingPath $staging
+            }
+            catch {
+                Write-Warning "Could not remove staging folder: $staging — $($_.Exception.Message)"
+            }
+        }
+    }
+}
+
+try {
+    $code = Invoke-Main
+    exit $code
 }
 catch {
-    Write-Host "[ERROR] $($_.Exception.Message)" -ForegroundColor Red
-    exit 1
-}
-finally {
-    if ($staging) {
-        try {
-            Remove-RobocopyStagingFolder -StagingPath $staging
-        }
-        catch {
-            Write-Warning "Could not remove staging folder: $staging — $($_.Exception.Message)"
-        }
-    }
+    Write-Error "[ERROR] $($_.Exception.Message)"
+    throw
 }

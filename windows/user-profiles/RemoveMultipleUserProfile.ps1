@@ -22,7 +22,7 @@ function Show-FreeSpace {
     Write-Output "Free: $([math]::Round($drive.Free / 1GB, 2)) GB ($([math]::Round(($drive.Free / ($drive.Used + $drive.Free)) * 100, 2))%)"
 }
 
-try {
+function Invoke-Main {
     Ensure-TempDirectory
     $csvPath = 'C:\Temp\DisabledUsers.csv'
 
@@ -85,6 +85,12 @@ try {
     Write-Output "[SUCCESS] RemoveMultipleUserProfile.ps1 completed."
     Write-Output "[INFO] Summary: Deleted=$deletedCount NotFound=$notFoundCount Failed=$failedCount Skipped=$skippedCount"
     Show-FreeSpace
+    return 0
+}
+
+try {
+    $code = Invoke-Main
+    exit $code
 }
 catch {
     Write-Error "[ERROR] $($_.Exception.Message)"

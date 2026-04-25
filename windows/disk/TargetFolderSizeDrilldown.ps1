@@ -156,62 +156,74 @@ function Read-NonNegativeDecimal {
     } while ($true)
 }
 
-# --- Input collection and validation ---
-$TargetPath = Read-TargetPath
-if (-not (Test-Path -LiteralPath $TargetPath -PathType Container)) {
-    Write-Host "[ERROR] Path not found or not a folder: $TargetPath" -ForegroundColor Red
-    exit 1
+function Invoke-Main {
+    # --- Input collection and validation ---
+    $TargetPath = Read-TargetPath
+    if (-not (Test-Path -LiteralPath $TargetPath -PathType Container)) {
+        Write-Host "[ERROR] Path not found or not a folder: $TargetPath" -ForegroundColor Red
+        return 1
+    }
+
+    $script:SizeThresholdGB = [double](Read-PositiveDecimal -Prompt 'Minimum child size to consider for expansion, in GB [default: 10]' -Default 10)
+    $script:DominanceGap = [double](Read-NonNegativeDecimal -Prompt 'Percentage points above average sibling share required to expand [default: 10]' -Default 10)
+
+    $Script:TreeNodes = [System.Collections.Generic.List[PSCustomObject]]::new()
+
+    Write-Host ""
+    Write-Host "============================================================" -ForegroundColor Cyan
+    Write-Host "  Folder Size Drilldown (TargetFolderSizeDrilldown.ps1)" -ForegroundColor Cyan
+    Write-Host "  Target : $TargetPath" -ForegroundColor Cyan
+    Write-Host "  Expand if : >$($script:SizeThresholdGB) GB AND >$($script:DominanceGap) pts above sibling avg" -ForegroundColor Cyan
+    Write-Host "============================================================" -ForegroundColor Cyan
+    Write-Host ""
+
+    Write-Progress-Line "[Scanning] $TargetPath (root total)..."
+    $rootSizeBytes = Get-FolderSize -Path $TargetPath
+    $rootSizeGB = [Math]::Round($rootSizeBytes / 1GB, 2)
+    Clear-Progress-Line
+
+    Write-Host "[Root] $TargetPath  -  $rootSizeGB GB total" -ForegroundColor Green
+    Write-Host ""
+
+    Show-FolderTree -Path $TargetPath -Depth 0 -ParentSizeBytes $rootSizeBytes
+
+    Write-Host ""
+    Write-Host "============================================================" -ForegroundColor Cyan
+    Write-Host "  FINAL TREE  ([+] = expanded further)" -ForegroundColor Cyan
+    Write-Host "============================================================" -ForegroundColor Cyan
+    Write-Host ""
+
+    $colFolder = 70
+    $colSize = 10
+    $colPct = 14
+
+    $header = "  {0,-$colFolder} {1,$colSize}  {2,$colPct}" -f 'Folder', 'Size (GB)', '% of Parent'
+    $divider = '  ' + ('-' * ($colFolder + $colSize + $colPct + 4))
+    Write-Host $header -ForegroundColor White
+    Write-Host $divider -ForegroundColor DarkGray
+
+    $rootRow = "  {0,-$colFolder} {1,$colSize}  {2,$colPct}" -f $TargetPath, $rootSizeGB, '—'
+    Write-Host $rootRow -ForegroundColor Green
+
+    foreach ($node in $Script:TreeNodes) {
+        $color = if ($node.Display -match '\[\+\]') { 'Yellow' } else { 'Gray' }
+        $row = "  {0,-$colFolder} {1,$colSize}  {2,$colPct}" -f `
+            $node.Display, "$($node.SizeGB) GB", "$($node.PctOfParent)%"
+        Write-Host $row -ForegroundColor $color
+    }
+
+    Write-Host ""
+    Write-Host "  [+] = folder was expanded  |  Thresholds: >$($script:SizeThresholdGB) GB and >$($script:DominanceGap) pts above sibling avg" -ForegroundColor DarkGray
+    Write-Host ""
+    Write-Host "[OK] Folder size drilldown completed." -ForegroundColor Green
+    return 0
 }
 
-$script:SizeThresholdGB = [double](Read-PositiveDecimal -Prompt 'Minimum child size to consider for expansion, in GB [default: 10]' -Default 10)
-$script:DominanceGap = [double](Read-NonNegativeDecimal -Prompt 'Percentage points above average sibling share required to expand [default: 10]' -Default 10)
-
-$Script:TreeNodes = [System.Collections.Generic.List[PSCustomObject]]::new()
-
-Write-Host ""
-Write-Host "============================================================" -ForegroundColor Cyan
-Write-Host "  Folder Size Drilldown (TargetFolderSizeDrilldown.ps1)" -ForegroundColor Cyan
-Write-Host "  Target : $TargetPath" -ForegroundColor Cyan
-Write-Host "  Expand if : >$($script:SizeThresholdGB) GB AND >$($script:DominanceGap) pts above sibling avg" -ForegroundColor Cyan
-Write-Host "============================================================" -ForegroundColor Cyan
-Write-Host ""
-
-Write-Progress-Line "[Scanning] $TargetPath (root total)..."
-$rootSizeBytes = Get-FolderSize -Path $TargetPath
-$rootSizeGB = [Math]::Round($rootSizeBytes / 1GB, 2)
-Clear-Progress-Line
-
-Write-Host "[Root] $TargetPath  -  $rootSizeGB GB total" -ForegroundColor Green
-Write-Host ""
-
-Show-FolderTree -Path $TargetPath -Depth 0 -ParentSizeBytes $rootSizeBytes
-
-Write-Host ""
-Write-Host "============================================================" -ForegroundColor Cyan
-Write-Host "  FINAL TREE  ([+] = expanded further)" -ForegroundColor Cyan
-Write-Host "============================================================" -ForegroundColor Cyan
-Write-Host ""
-
-$colFolder = 70
-$colSize = 10
-$colPct = 14
-
-$header = "  {0,-$colFolder} {1,$colSize}  {2,$colPct}" -f 'Folder', 'Size (GB)', '% of Parent'
-$divider = '  ' + ('-' * ($colFolder + $colSize + $colPct + 4))
-Write-Host $header -ForegroundColor White
-Write-Host $divider -ForegroundColor DarkGray
-
-$rootRow = "  {0,-$colFolder} {1,$colSize}  {2,$colPct}" -f $TargetPath, $rootSizeGB, '—'
-Write-Host $rootRow -ForegroundColor Green
-
-foreach ($node in $Script:TreeNodes) {
-    $color = if ($node.Display -match '\[\+\]') { 'Yellow' } else { 'Gray' }
-    $row = "  {0,-$colFolder} {1,$colSize}  {2,$colPct}" -f `
-        $node.Display, "$($node.SizeGB) GB", "$($node.PctOfParent)%"
-    Write-Host $row -ForegroundColor $color
+try {
+    $code = Invoke-Main
+    exit $code
 }
-
-Write-Host ""
-Write-Host "  [+] = folder was expanded  |  Thresholds: >$($script:SizeThresholdGB) GB and >$($script:DominanceGap) pts above sibling avg" -ForegroundColor DarkGray
-Write-Host ""
-Write-Host "[OK] Folder size drilldown completed." -ForegroundColor Green
+catch {
+    Write-Error "[ERROR] $($_.Exception.Message)"
+    throw
+}

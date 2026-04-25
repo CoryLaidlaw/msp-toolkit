@@ -38,6 +38,7 @@ If any hard gate fails, the change MUST be blocked until corrected or an approve
   1. Function declarations
   2. Input collection and validation
   3. Main execution
+- [ ] Executable flow runs through a single main-function entry point (for example `Invoke-Main`) to prevent chunked-paste control-flow breakage.
 
 ## Documentation Checks
 
@@ -64,4 +65,5 @@ Review this checklist whenever script standards change.
 - 2026-04-24: Initial checklist created.
 - 2026-04-24: Added `C:\Temp` validation check for file operations.
 - 2026-04-24: Added hard gate for no script-level parameters (prompt-based input).
+- 2026-04-25: Added main-function entry-point check for chunked-paste resilience.
 - 2026-04-25: Added required concise `.SYNOPSIS`/`.DESCRIPTION` header check.

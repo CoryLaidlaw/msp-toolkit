@@ -40,6 +40,8 @@ This document does not govern folder layout; folder governance is defined in `do
   3. Main execution
 - Scripts MUST support a one-paste flow: paste once, provide prompted inputs as needed, then execution proceeds.
 - Scripts MUST NOT rely on multi-stage paste workflows.
+- Scripts MUST keep executable control flow inside a main function (for example `Invoke-Main`) and invoke it once at the end.
+- Scripts MUST avoid top-level detached control-flow blocks that can break in chunked interactive paste (for example top-level `if/else` pairs split across chunks).
 
 ## Input And Prompting
 
@@ -122,4 +124,5 @@ This standard SHOULD be reviewed whenever script authoring expectations change a
 - 2026-04-24: Initial script standards created.
 - 2026-04-24: Standardized file input/output location to `C:\Temp` (create when needed).
 - 2026-04-24: Required prompt-based operator input; disallowed script-level `param` blocks for copy-paste execution.
+- 2026-04-25: Required main-function execution wrapper (`Invoke-Main` pattern) for chunked paste resilience.
 - 2026-04-25: Required concise script header help with `.SYNOPSIS` and `.DESCRIPTION`.

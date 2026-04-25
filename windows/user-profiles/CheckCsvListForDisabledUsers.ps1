@@ -17,7 +17,7 @@ function Ensure-TempDirectory {
     }
 }
 
-try {
+function Invoke-Main {
     Ensure-TempDirectory
 
     $csvPath = 'C:\Temp\DomainUserProfiles.csv'
@@ -86,6 +86,12 @@ try {
     $disabledUsers | Export-Csv -Path $outputPath -NoTypeInformation
     Write-Output "[SUCCESS] Exported $($disabledUsers.Count) rows to $outputPath"
     Write-Output "[INFO] Summary: Enabled=$enabledCount Disabled=$disabledCount NotFound=$notFoundCount Skipped=$skippedCount"
+    return 0
+}
+
+try {
+    $code = Invoke-Main
+    exit $code
 }
 catch {
     Write-Error "[ERROR] $($_.Exception.Message)"

@@ -16,6 +16,7 @@ Scripts SHOULD follow this order where practical:
 2. Input prompts and validation
 3. Main execution
 4. Final success/failure summary output
+5. Single main-function invocation (for example `Invoke-Main`) at script end
 
 ## Authoring Rules
 
@@ -30,6 +31,7 @@ Scripts SHOULD follow this order where practical:
 - Comments SHOULD be minimal and reserved for non-obvious safety-critical behavior.
 - Scripts MUST begin with a concise comment-based help block that includes `.SYNOPSIS` and `.DESCRIPTION`.
 - File input/output SHOULD use `C:\Temp`, and scripts MUST create it before file operations when needed.
+- Scripts MUST route executable runtime flow through a main function and call it once at the end to avoid chunked-paste `if/else` detachment issues.
 
 ## Skeleton Pattern
 
@@ -76,8 +78,9 @@ function Invoke-Main {
 
 try {
     $target = Read-RequiredInput -Prompt 'Enter target value'
-    Invoke-Main -Target $target
+    $code = Invoke-Main -Target $target
     Write-Host '[SUCCESS] Script completed successfully.'
+    exit $code
 }
 catch {
     Write-Error "[ERROR] $($_.Exception.Message)"
@@ -114,3 +117,4 @@ Review this template whenever script standards change.
 - 2026-04-24: Added `C:\Temp` file I/O convention and creation snippet.
 - 2026-04-24: Documented no script-level `param`; prompts for operator input.
 - 2026-04-25: Added required concise `.SYNOPSIS`/`.DESCRIPTION` header in authoring rules and skeleton.
+- 2026-04-25: Added `Invoke-Main` entry-point requirement and skeleton exit-code pattern for chunked-paste resilience.

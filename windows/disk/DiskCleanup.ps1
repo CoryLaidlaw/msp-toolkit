@@ -111,125 +111,132 @@ function Invoke-CleanMgrSageRun {
     }
 }
 
-# --- Input collection and validation ---
-$isAdmin = Test-IsAdministrator
-$isSystem = Test-IsLocalSystem
+function Invoke-Main {
+    # --- Input collection and validation ---
+    $isAdmin = Test-IsAdministrator
+    $isSystem = Test-IsLocalSystem
 
-if (-not $isAdmin) {
-    Write-Warning 'Not running elevated: admin-only steps (Windows Update cache, Prefetch, Delivery Optimization, cleanmgr, DISM) will be skipped.'
-}
+    if (-not $isAdmin) {
+        Write-Warning 'Not running elevated: admin-only steps (Windows Update cache, Prefetch, Delivery Optimization, cleanmgr, DISM) will be skipped.'
+    }
 
-Write-Output 'This script deletes temporary files, caches, and when elevated runs cleanmgr (Disk Cleanup) and DISM /ResetBase.'
-Write-Output 'Profile cache steps are skipped when running as LocalSystem.'
-if (-not (Test-ReadHostYes -Prompt 'Continue with cleanup? (Y/N)')) {
-    Write-Output 'Aborted by operator.'
-    return
-}
+    Write-Output 'This script deletes temporary files, caches, and when elevated runs cleanmgr (Disk Cleanup) and DISM /ResetBase.'
+    Write-Output 'Profile cache steps are skipped when running as LocalSystem.'
+    if (-not (Test-ReadHostYes -Prompt 'Continue with cleanup? (Y/N)')) {
+        Write-Output 'Aborted by operator.'
+        return
+    }
 
-# --- Main execution ---
-$drive = Get-PSDrive -Name C -ErrorAction Stop
-$initialFreeSpace = [math]::Round($drive.Free / 1GB, 2)
-$totalSpace = [math]::Round(($drive.Used + $drive.Free) / 1GB, 2)
-$initialPercentFree = if (($drive.Used + $drive.Free) -eq 0) {
-    0
-}
-else {
-    [math]::Round(($drive.Free / ($drive.Used + $drive.Free)) * 100, 2)
-}
+    # --- Main execution ---
+    $drive = Get-PSDrive -Name C -ErrorAction Stop
+    $initialFreeSpace = [math]::Round($drive.Free / 1GB, 2)
+    $totalSpace = [math]::Round(($drive.Used + $drive.Free) / 1GB, 2)
+    $initialPercentFree = 0
+    if (($drive.Used + $drive.Free) -ne 0) {
+        $initialPercentFree = [math]::Round(($drive.Free / ($drive.Used + $drive.Free)) * 100, 2)
+    }
 
-Write-Output "Initial free space on C: $initialFreeSpace GB of $totalSpace GB ($initialPercentFree%)"
+    Write-Output "Initial free space on C: $initialFreeSpace GB of $totalSpace GB ($initialPercentFree%)"
 
-Remove-FilesSafely -Path 'C:\Windows\Temp' -Description 'Windows Temp folder'
+    Remove-FilesSafely -Path 'C:\Windows\Temp' -Description 'Windows Temp folder'
 
-if (-not $isSystem) {
-    $tempPath = [System.IO.Path]::GetTempPath().TrimEnd('\')
-    Remove-FilesSafely -Path $tempPath -Description 'Current user Temp folder'
-}
+    if (-not $isSystem) {
+        $tempPath = [System.IO.Path]::GetTempPath().TrimEnd('\')
+        Remove-FilesSafely -Path $tempPath -Description 'Current user Temp folder'
+    }
 
-if (-not (Test-Path -LiteralPath 'C:\Temp')) {
-    New-Item -ItemType Directory -Path 'C:\Temp' -Force | Out-Null
-}
-Remove-FilesSafely -Path 'C:\Temp' -Description 'C:\Temp folder'
+    if (-not (Test-Path -LiteralPath 'C:\Temp')) {
+        New-Item -ItemType Directory -Path 'C:\Temp' -Force | Out-Null
+    }
+    Remove-FilesSafely -Path 'C:\Temp' -Description 'C:\Temp folder'
 
-Write-Output 'Emptying Recycle Bin...'
-try {
-    Clear-RecycleBin -Force -ErrorAction Stop
-    Write-Output '  Recycle Bin emptied.'
-}
-catch {
-    Write-Warning "Could not empty Recycle Bin — $($_.Exception.Message)"
-}
+    Write-Output 'Emptying Recycle Bin...'
+    try {
+        Clear-RecycleBin -Force -ErrorAction Stop
+        Write-Output '  Recycle Bin emptied.'
+    }
+    catch {
+        Write-Warning "Could not empty Recycle Bin — $($_.Exception.Message)"
+    }
 
-if ($isAdmin) {
-    Remove-FilesSafely -Path 'C:\Windows\SoftwareDistribution\Download' -Description 'Windows Update cache'
-}
+    if ($isAdmin) {
+        Remove-FilesSafely -Path 'C:\Windows\SoftwareDistribution\Download' -Description 'Windows Update cache'
+    }
 
-Remove-FilesSafely -Path 'C:\ProgramData\Microsoft\Windows\WER\ReportQueue' -Description 'Windows Error Reports'
-Remove-FilesSafely -Path 'C:\ProgramData\Microsoft\Windows\WER\ReportArchive' -Description 'Windows Error Report Archives'
+    Remove-FilesSafely -Path 'C:\ProgramData\Microsoft\Windows\WER\ReportQueue' -Description 'Windows Error Reports'
+    Remove-FilesSafely -Path 'C:\ProgramData\Microsoft\Windows\WER\ReportArchive' -Description 'Windows Error Report Archives'
 
-if ($isAdmin) {
-    Remove-FilesSafely -Path 'C:\Windows\Prefetch' -Description 'Prefetch files'
-}
+    if ($isAdmin) {
+        Remove-FilesSafely -Path 'C:\Windows\Prefetch' -Description 'Prefetch files'
+    }
 
-if (-not $isSystem) {
-    Remove-FilesSafely -Path (Join-Path $env:LOCALAPPDATA 'Microsoft\Windows\Explorer') -Description 'Thumbnail cache'
+    if (-not $isSystem) {
+        Remove-FilesSafely -Path (Join-Path $env:LOCALAPPDATA 'Microsoft\Windows\Explorer') -Description 'Thumbnail cache'
 
-    Remove-FilesSafely -Path (Join-Path $env:LOCALAPPDATA 'Microsoft\Edge\User Data\Default\Cache') -Description 'Microsoft Edge cache'
-    Remove-FilesSafely -Path (Join-Path $env:LOCALAPPDATA 'Microsoft\Edge\User Data\Default\Code Cache') -Description 'Microsoft Edge code cache'
+        Remove-FilesSafely -Path (Join-Path $env:LOCALAPPDATA 'Microsoft\Edge\User Data\Default\Cache') -Description 'Microsoft Edge cache'
+        Remove-FilesSafely -Path (Join-Path $env:LOCALAPPDATA 'Microsoft\Edge\User Data\Default\Code Cache') -Description 'Microsoft Edge code cache'
 
-    Remove-FilesSafely -Path (Join-Path $env:LOCALAPPDATA 'Google\Chrome\User Data\Default\Cache') -Description 'Google Chrome cache'
-    Remove-FilesSafely -Path (Join-Path $env:LOCALAPPDATA 'Google\Chrome\User Data\Default\Code Cache') -Description 'Google Chrome code cache'
+        Remove-FilesSafely -Path (Join-Path $env:LOCALAPPDATA 'Google\Chrome\User Data\Default\Cache') -Description 'Google Chrome cache'
+        Remove-FilesSafely -Path (Join-Path $env:LOCALAPPDATA 'Google\Chrome\User Data\Default\Code Cache') -Description 'Google Chrome code cache'
 
-    $ffProfilesRoot = Join-Path $env:LOCALAPPDATA 'Mozilla\Firefox\Profiles'
-    if (Test-Path -LiteralPath $ffProfilesRoot) {
-        Get-ChildItem -LiteralPath $ffProfilesRoot -Directory -ErrorAction SilentlyContinue | ForEach-Object {
-            $cache2 = Join-Path $_.FullName 'cache2'
-            Remove-FilesSafely -Path $cache2 -Description "Firefox cache ($($_.Name))"
+        $ffProfilesRoot = Join-Path $env:LOCALAPPDATA 'Mozilla\Firefox\Profiles'
+        if (Test-Path -LiteralPath $ffProfilesRoot) {
+            Get-ChildItem -LiteralPath $ffProfilesRoot -Directory -ErrorAction SilentlyContinue | ForEach-Object {
+                $cache2 = Join-Path $_.FullName 'cache2'
+                Remove-FilesSafely -Path $cache2 -Description "Firefox cache ($($_.Name))"
+            }
         }
     }
-}
-else {
-    Write-Output 'Skipping current-user profile caches (running as LocalSystem).'
-}
+    else {
+        Write-Output 'Skipping current-user profile caches (running as LocalSystem).'
+    }
 
-if ($isAdmin) {
-    Remove-FilesSafely -Path 'C:\Windows\ServiceProfiles\NetworkService\AppData\Local\Microsoft\Windows\DeliveryOptimization\Cache' -Description 'Delivery Optimization cache'
-}
+    if ($isAdmin) {
+        Remove-FilesSafely -Path 'C:\Windows\ServiceProfiles\NetworkService\AppData\Local\Microsoft\Windows\DeliveryOptimization\Cache' -Description 'Delivery Optimization cache'
+    }
 
-Remove-FilesSafely -Path 'C:\Windows\Downloaded Program Files' -Description 'Downloaded Program Files'
+    Remove-FilesSafely -Path 'C:\Windows\Downloaded Program Files' -Description 'Downloaded Program Files'
 
-if (Test-Path -LiteralPath 'C:\inetpub\logs\LogFiles') {
-    Remove-FilesSafely -Path 'C:\inetpub\logs\LogFiles' -Description 'IIS Log Files'
-}
+    if (Test-Path -LiteralPath 'C:\inetpub\logs\LogFiles') {
+        Remove-FilesSafely -Path 'C:\inetpub\logs\LogFiles' -Description 'IIS Log Files'
+    }
 
-if ($isAdmin) {
+    if ($isAdmin) {
+        Write-Output ''
+        Write-Output 'Running Windows Disk Cleanup utility (cleanmgr /sagerun); sets HKLM VolumeCaches flags and may show UI on some systems.'
+        Invoke-CleanMgrSageRun
+    }
+
+    if ($isAdmin) {
+        Write-Output 'Analyzing Windows Component Store (DISM)...'
+        Invoke-DismWithExitCheck -ArgumentList @('/Online', '/Cleanup-Image', '/AnalyzeComponentStore', '/NoRestart', '/Quiet') -StepName 'DISM AnalyzeComponentStore'
+
+        Write-Output 'Cleaning Windows Component Store (DISM /StartComponentCleanup /ResetBase)...'
+        Invoke-DismWithExitCheck -ArgumentList @('/Online', '/Cleanup-Image', '/StartComponentCleanup', '/ResetBase', '/NoRestart', '/Quiet') -StepName 'DISM StartComponentCleanup'
+    }
+
+    $drive = Get-PSDrive -Name C -ErrorAction Stop
+    $finalFreeSpace = [math]::Round($drive.Free / 1GB, 2)
+    $finalPercentFree = 0
+    if (($drive.Used + $drive.Free) -ne 0) {
+        $finalPercentFree = [math]::Round(($drive.Free / ($drive.Used + $drive.Free)) * 100, 2)
+    }
+
+    $freedSpace = [math]::Round($finalFreeSpace - $initialFreeSpace, 2)
+    $percentPointsChange = [math]::Round($finalPercentFree - $initialPercentFree, 2)
+
     Write-Output ''
-    Write-Output 'Running Windows Disk Cleanup utility (cleanmgr /sagerun); sets HKLM VolumeCaches flags and may show UI on some systems.'
-    Invoke-CleanMgrSageRun
+    Write-Output 'Cleanup complete.'
+    Write-Output "Drive size:         $totalSpace GB"
+    Write-Output "Initial free space: $initialFreeSpace GB ($initialPercentFree%)"
+    Write-Output "Final free space:   $finalFreeSpace GB ($finalPercentFree%)"
+    Write-Output "Space freed:        $freedSpace GB (free % change: $percentPointsChange)"
 }
 
-if ($isAdmin) {
-    Write-Output 'Analyzing Windows Component Store (DISM)...'
-    Invoke-DismWithExitCheck -ArgumentList @('/Online', '/Cleanup-Image', '/AnalyzeComponentStore', '/NoRestart', '/Quiet') -StepName 'DISM AnalyzeComponentStore'
-
-    Write-Output 'Cleaning Windows Component Store (DISM /StartComponentCleanup /ResetBase)...'
-    Invoke-DismWithExitCheck -ArgumentList @('/Online', '/Cleanup-Image', '/StartComponentCleanup', '/ResetBase', '/NoRestart', '/Quiet') -StepName 'DISM StartComponentCleanup'
+try {
+    Invoke-Main
 }
-
-$drive = Get-PSDrive -Name C -ErrorAction Stop
-$finalFreeSpace = [math]::Round($drive.Free / 1GB, 2)
-$finalPercentFree = if (($drive.Used + $drive.Free) -eq 0) {
-    0
+catch {
+    Write-Error "[ERROR] $($_.Exception.Message)"
+    throw
 }
-else {
-    [math]::Round(($drive.Free / ($drive.Used + $drive.Free)) * 100, 2)
-}
-$freedSpace = [math]::Round($finalFreeSpace - $initialFreeSpace, 2)
-$percentPointsChange = [math]::Round($finalPercentFree - $initialPercentFree, 2)
-
-Write-Output ''
-Write-Output 'Cleanup complete.'
-Write-Output "Drive size:         $totalSpace GB"
-Write-Output "Initial free space: $initialFreeSpace GB ($initialPercentFree%)"
-Write-Output "Final free space:   $finalFreeSpace GB ($finalPercentFree%)"
-Write-Output "Space freed:        $freedSpace GB (free % change: $percentPointsChange)"

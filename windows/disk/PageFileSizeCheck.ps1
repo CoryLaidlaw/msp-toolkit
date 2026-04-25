@@ -26,9 +26,15 @@ function Get-PagefileSizeReport {
     Write-Output "Size: $sizeGB GB ($sizeBytes bytes)"
 }
 
-try {
+function Invoke-Main {
     Get-PagefileSizeReport -LiteralPath 'C:\pagefile.sys'
     Write-Host '[SUCCESS] PageFileSizeCheck completed.'
+    return 0
+}
+
+try {
+    $code = Invoke-Main
+    exit $code
 }
 catch {
     Write-Host "[ERROR] $($_.Exception.Message)" -ForegroundColor Red

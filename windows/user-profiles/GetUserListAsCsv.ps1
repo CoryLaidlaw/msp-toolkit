@@ -30,7 +30,7 @@ function Ensure-TempDirectory {
     }
 }
 
-try {
+function Invoke-Main {
     $targetDomain = Read-RequiredInput -Prompt 'Enter domain short name (example: CONTOSO, no .local/.com)'
     $targetDomain = $targetDomain.ToUpperInvariant()
 
@@ -77,6 +77,12 @@ try {
 
     Write-Output "[SUCCESS] Exported $($matchedProfiles.Count) domain profiles for '$targetDomain' to $matchedPath"
     Write-Output "[SUCCESS] Exported $($unresolvedProfiles.Count) unresolved profiles to $unresolvedPath"
+    return 0
+}
+
+try {
+    $code = Invoke-Main
+    exit $code
 }
 catch {
     Write-Error "[ERROR] $($_.Exception.Message)"

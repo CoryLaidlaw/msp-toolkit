@@ -37,7 +37,7 @@ function Show-FreeSpace {
     Write-Output "Free: $([math]::Round($drive.Free / 1GB, 2)) GB ($([math]::Round(($drive.Free / ($drive.Used + $drive.Free)) * 100, 2))%)"
 }
 
-try {
+function Invoke-Main {
     $username = Read-RequiredInput -Prompt 'Enter the username for the profile to remove'
     $profilePath = Read-RequiredInput -Prompt 'Enter the full profile path (example: C:\Users\Username)'
 
@@ -62,6 +62,12 @@ try {
 
     Write-Output '[SUCCESS] RemoveOneUserProfile.ps1 completed successfully.'
     Show-FreeSpace
+    return 0
+}
+
+try {
+    $code = Invoke-Main
+    exit $code
 }
 catch {
     Write-Error "[ERROR] $($_.Exception.Message)"

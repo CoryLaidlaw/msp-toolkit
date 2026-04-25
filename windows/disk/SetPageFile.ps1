@@ -47,29 +47,41 @@ function Read-PositiveIntWithDefault {
     } while ($true)
 }
 
-# --- Input collection ---
-$pagefilePath = Read-InputWithDefault -Prompt 'Pagefile path' -Default 'C:\pagefile.sys'
-$initialSizeMb = Read-PositiveIntWithDefault -Prompt 'Initial size (MB)' -Default 4096
-$maximumSizeMb = Read-PositiveIntWithDefault -Prompt 'Maximum size (MB)' -Default 8192
+function Invoke-Main {
+    # --- Input collection ---
+    $pagefilePath = Read-InputWithDefault -Prompt 'Pagefile path' -Default 'C:\pagefile.sys'
+    $initialSizeMb = Read-PositiveIntWithDefault -Prompt 'Initial size (MB)' -Default 4096
+    $maximumSizeMb = Read-PositiveIntWithDefault -Prompt 'Maximum size (MB)' -Default 8192
 
-if ($maximumSizeMb -lt $initialSizeMb) {
-    Write-Host "[ERROR] Maximum size must be greater than or equal to initial size." -ForegroundColor Red
-    exit 1
+    if ($maximumSizeMb -lt $initialSizeMb) {
+        Write-Host "[ERROR] Maximum size must be greater than or equal to initial size." -ForegroundColor Red
+        return 1
+    }
+
+    # --- Main execution ---
+    $cs = Get-CimInstance Win32_ComputerSystem
+    if ($cs.AutomaticManagedPagefile) {
+        Set-CimInstance -InputObject $cs -Property @{ AutomaticManagedPagefile = $false }
+        Write-Host 'Disabled AutomaticManagedPagefile.'
+    }
+    else {
+        Write-Host 'AutomaticManagedPagefile already disabled.'
+    }
+
+    $regPath = 'HKLM:\SYSTEM\CurrentControlSet\Control\Session Manager\Memory Management'
+    $pagingValue = "$pagefilePath $initialSizeMb $maximumSizeMb"
+    Set-ItemProperty -Path $regPath -Name 'PagingFiles' -Value $pagingValue
+
+    Write-Host "PagingFiles set to: $pagingValue"
+    Write-Host '[SUCCESS] SetPageFile completed. Reboot is typically required for full effect.'
+    return 0
 }
 
-# --- Main execution ---
-$cs = Get-CimInstance Win32_ComputerSystem
-if ($cs.AutomaticManagedPagefile) {
-    Set-CimInstance -InputObject $cs -Property @{ AutomaticManagedPagefile = $false }
-    Write-Host 'Disabled AutomaticManagedPagefile.'
+try {
+    $code = Invoke-Main
+    exit $code
 }
-else {
-    Write-Host 'AutomaticManagedPagefile already disabled.'
+catch {
+    Write-Error "[ERROR] $($_.Exception.Message)"
+    throw
 }
-
-$regPath = 'HKLM:\SYSTEM\CurrentControlSet\Control\Session Manager\Memory Management'
-$pagingValue = "$pagefilePath $initialSizeMb $maximumSizeMb"
-Set-ItemProperty -Path $regPath -Name 'PagingFiles' -Value $pagingValue
-
-Write-Host "PagingFiles set to: $pagingValue"
-Write-Host '[SUCCESS] SetPageFile completed. Reboot is typically required for full effect.'
