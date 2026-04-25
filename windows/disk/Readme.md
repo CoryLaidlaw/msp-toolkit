@@ -66,6 +66,35 @@ When elevated, **cleanmgr** runs automatically after file cleanup (no separate p
 
 **Usage:** Paste the entire script into Windows PowerShell and answer the prompts, or run `.\TargetFolderSizeDrilldown.ps1` from this folder.
 
+## FolderSizeByExtension.ps1
+
+**Purpose:** Read-only **size breakdown by file extension** under a single root path. Lists each extension (or “No Extension”), **file count**, and **total size in GB**, sorted largest-first.
+
+**Execution context:** Intended for **elevated Administrator** or **LocalSystem**. The script only **reads** file metadata (no deletes). Under **LocalSystem**, permission denials may omit files; totals can be lower than under an interactive admin session.
+
+**Operator inputs (prompts only — no parameters):**
+
+1. **`Folder path to analyze [default: C:\Users]`** — Root folder to scan. Press **Enter** for `C:\Users`. Must exist and be a **folder**; otherwise the script prints **`[ERROR]`** and exits with code **1**.
+
+**What it does (summary):**
+
+- Recursively enumerates **files only** (not directories), groups by **`Extension`**, aggregates size with **`Measure-Object`**, prints a table, then a **`[SUCCESS]`** line with file and group counts.
+
+**Commands and APIs used:** `Read-Host`, `Test-Path`, `Get-ChildItem`, `Group-Object`, `Measure-Object`, `Sort-Object`, `Format-Table`, `Write-Host`.
+
+**Safety / impact:**
+
+- **No deletions or configuration changes** — sizing only.
+- **Heavy disk and CPU use** on large paths (full recursive file list in memory). Prefer narrow targets or maintenance windows.
+
+**Validation:**
+
+- Successful run ends with **`[SUCCESS] FolderSizeByExtension completed.`** in green (includes file and extension-group counts when files were found).
+- Empty or fully inaccessible tree: **`[INFO] No files were enumerated`** then **`[SUCCESS]`**.
+- Invalid root path: **`[ERROR] Path not found or not a folder:`** and **exit code 1**.
+
+**Usage:** Paste into Windows PowerShell or run `.\FolderSizeByExtension.ps1` from this folder.
+
 ## DeleteDownloads.ps1
 
 **Purpose:** Delete **all contents** of each user profile’s **Downloads** folder under a chosen users root (default `C:\Users`).
