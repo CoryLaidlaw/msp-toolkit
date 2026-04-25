@@ -21,7 +21,7 @@ Each script folder readme SHOULD include:
 
 Each documented script entry MUST include:
 
-- **Script name**: exact `.ps1` filename.
+- **Script name**: the `.ps1` file in **PascalCase**, matching `docs/POWERSHELL_SCRIPT_STANDARDS.md` (for example `DiskCleanup.ps1`).
 - **Purpose**: what problem it solves.
 - **Required operator inputs**: prompts or values the operator must provide.
 - **Assumptions**: runtime context assumptions (SYSTEM/admin).
@@ -61,5 +61,6 @@ Review readme expectations whenever script standards or folder organization chan
 
 ## Change Log
 
+- 2026-04-24: Required script names in readme entries to use PascalCase per script standards.
 - 2026-04-24: Initial readme expectations created.
 - 2026-04-24: Added `C:\Temp` file path documentation expectation.

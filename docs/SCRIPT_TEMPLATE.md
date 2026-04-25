@@ -19,8 +19,10 @@ Scripts SHOULD follow this order where practical:
 
 ## Authoring Rules
 
+- New script files SHOULD be named in **PascalCase** (see `docs/POWERSHELL_SCRIPT_STANDARDS.md`).
 - Scripts MUST run in Windows PowerShell `5.1`.
 - Scripts MUST be self-contained and one-paste runnable.
+- Scripts MUST NOT declare a script-level `param(...)` block; collect operator values with prompts (`Read-Host`, validation loops). Nested functions may use `param` internally.
 - Scripts MUST avoid non-default module dependencies.
 - Scripts MUST assume LocalSystem or elevated admin context.
 - Scripts MUST NOT open GUI elements or spawn new PowerShell windows/sessions.
@@ -85,6 +87,7 @@ Do:
 
 Do Not:
 
+- Declare script-level parameters (`param`, `[CmdletBinding()]` with switches) for operator input.
 - Require manual source edits before running.
 - Depend on follow-up paste blocks.
 - Assume standard end-user session context.
@@ -98,5 +101,7 @@ Review this template whenever script standards change.
 
 ## Change Log
 
+- 2026-04-24: Noted PascalCase for new script filenames.
 - 2026-04-24: Initial template guidance created.
 - 2026-04-24: Added `C:\Temp` file I/O convention and creation snippet.
+- 2026-04-24: Documented no script-level `param`; prompts for operator input.

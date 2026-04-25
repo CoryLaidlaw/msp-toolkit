@@ -13,6 +13,7 @@ Use this checklist for script pull requests and direct repository updates.
 - [ ] Runs in Windows PowerShell `5.1`.
 - [ ] Requires no non-default modules, add-ins, or install steps.
 - [ ] Script is self-contained and supports one-paste execution.
+- [ ] Script has **no script-level** `param(...)` / `[CmdletBinding()]` operator parameters; required operator choices use **prompts** (`Read-Host` or equivalent), unless an approved exception exists.
 - [ ] Assumes LocalSystem or elevated admin context (not standard end-user context).
 - [ ] Does not open GUI/dialog windows.
 - [ ] Does not launch a new PowerShell window/session for normal flow.
@@ -30,7 +31,7 @@ If any hard gate fails, the change MUST be blocked until corrected or an approve
 
 ## Readability And Maintainability Checks
 
-- [ ] Naming is clear and action-oriented.
+- [ ] Naming is clear and action-oriented; folder readme entries use **PascalCase** for the `.ps1` name as defined in `docs/POWERSHELL_SCRIPT_STANDARDS.md`, and new or renamed scripts SHOULD use that PascalCase for the file on disk.
 - [ ] Comments are minimal and only used for non-obvious safety-critical behavior.
 - [ ] Script structure follows preferred flow where practical:
   1. Function declarations
@@ -58,5 +59,7 @@ Review this checklist whenever script standards change.
 
 ## Change Log
 
+- 2026-04-24: Added PascalCase filename and readme spelling check.
 - 2026-04-24: Initial checklist created.
 - 2026-04-24: Added `C:\Temp` validation check for file operations.
+- 2026-04-24: Added hard gate for no script-level parameters (prompt-based input).

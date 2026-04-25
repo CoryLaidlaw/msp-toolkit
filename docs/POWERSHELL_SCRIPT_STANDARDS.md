@@ -43,6 +43,8 @@ This document does not govern folder layout; folder governance is defined in `do
 
 ## Input And Prompting
 
+- Scripts MUST NOT declare a **script-level** `param(...)` block (including `[CmdletBinding()]` paired with script parameters). Operator-supplied values MUST be collected with **`Read-Host`** or equivalent in-session prompts so the script runs as a **single pasted block** without passing `-Argument` switches on the command line.
+- `param` blocks on **nested functions** are allowed when they are an internal implementation detail (for example, a helper that takes a path or message string).
 - Values that require operator input MUST be prompted during execution.
 - Scripts SHOULD gather most inputs near startup when practical.
 - Scripts MUST validate critical inputs before performing changes.
@@ -69,6 +71,8 @@ This document does not govern folder layout; folder governance is defined in `do
 ## Script Naming Conventions
 
 - Script filenames MUST use `.ps1`.
+- The filename without extension SHOULD use **PascalCase** (each word starts with an uppercase letter; no spaces), consistent with common PowerShell naming practice—for example `DiskCleanup.ps1`, `GetLargestFolders.ps1`.
+- In READMEs and other documentation, when referring to a script by file name, use that same **PascalCase** `.ps1` spelling (including in headings and example commands such as `.\DiskCleanup.ps1`).
 - Script names SHOULD be clear, action-oriented, and descriptive of task scope.
 - Script names SHOULD avoid temporary/version suffixes such as `v2`, `new`, `final`.
 
@@ -85,8 +89,10 @@ Each folder readme that documents scripts SHOULD include:
 
 A new or updated script is considered compliant when:
 
+- Folder readme entries (and other documentation) refer to the script using the **PascalCase** `.ps1` spelling described in Script Naming Conventions; new or renamed scripts SHOULD use that same PascalCase for the file on disk.
 - It runs on Windows PowerShell `5.1` without non-default dependencies.
 - It is self-contained and supports one-paste execution.
+- It does not use a script-level `param` block for operator input (prompts only), except where an approved exception exists in `docs/EXCEPTIONS_POLICY.md`.
 - It assumes SYSTEM/admin context and avoids end-user context dependencies.
 - It prompts for required inputs and validates critical values.
 - It provides practical progress/output updates.
@@ -102,5 +108,8 @@ This standard SHOULD be reviewed whenever script authoring expectations change a
 
 ## Change Log
 
+- 2026-04-24: Renamed existing repository `.ps1` files to PascalCase on disk (for example `DiskCleanup.ps1`, `NewUserOrCopyFromCsv.ps1`).
+- 2026-04-24: Documented PascalCase for script filenames and for how scripts are named in documentation.
 - 2026-04-24: Initial script standards created.
 - 2026-04-24: Standardized file input/output location to `C:\Temp` (create when needed).
+- 2026-04-24: Required prompt-based operator input; disallowed script-level `param` blocks for copy-paste execution.
