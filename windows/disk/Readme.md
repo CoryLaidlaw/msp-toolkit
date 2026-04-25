@@ -32,7 +32,7 @@ When elevated, **cleanmgr** runs automatically after file cleanup (no separate p
 - **Browser caches** affect only the **invoking user profile** when not LocalSystem.
 - **`cleanmgr`** may still be unsuitable in some locked-down or session-zero scenarios even with `/sagerun`.
 
-**Usage:** Paste the entire script into an elevated Windows PowerShell 5.1 session and answer the prompt, or run the file with `.\DiskCleanup.ps1` from its directory.
+**Usage:** Paste the entire script into an elevated Windows PowerShell session and answer the prompt, or run the file with `.\DiskCleanup.ps1` from its directory.
 
 ## TargetFolderSizeDrilldown.ps1
 
@@ -64,7 +64,7 @@ When elevated, **cleanmgr** runs automatically after file cleanup (no separate p
 - Invalid root path: **`[ERROR] Path not found or not a folder:`** and **exit code 1**.
 - **`[+]`** in the tree means that folder met both thresholds and child subfolders were analyzed the same way.
 
-**Usage:** Paste the entire script into Windows PowerShell 5.1 and answer the prompts, or run `.\TargetFolderSizeDrilldown.ps1` from this folder.
+**Usage:** Paste the entire script into Windows PowerShell and answer the prompts, or run `.\TargetFolderSizeDrilldown.ps1` from this folder.
 
 ## DeleteDownloads.ps1
 
@@ -96,7 +96,7 @@ When elevated, **cleanmgr** runs automatically after file cleanup (no separate p
 - **`[WARN] Completed with one or more failures.`** if any profile cleanup threw; script exits with **non-zero** in that case.
 - **`Aborted by operator.`** if confirmation was not **Y**/**yes**.
 
-**Usage:** Paste into Windows PowerShell 5.1 or run `.\DeleteDownloads.ps1` from this folder.
+**Usage:** Paste into Windows PowerShell or run `.\DeleteDownloads.ps1` from this folder.
 
 ## RobustFolderClean.ps1
 
@@ -127,7 +127,7 @@ When elevated, **cleanmgr** runs automatically after file cleanup (no separate p
 - **`[SUCCESS] RobustFolderClean completed.`** when robocopy succeeds and no terminating error occurred.
 - **`[ERROR]`** messages for missing path, robocopy failure (exit code outside 0–7), or other failures; **non-zero exit**.
 
-**Usage:** Paste into Windows PowerShell 5.1 or run `.\RobustFolderClean.ps1` from this folder.
+**Usage:** Paste into Windows PowerShell or run `.\RobustFolderClean.ps1` from this folder.
 
 ## OneDriveFreeUpDiskSpace.ps1
 
@@ -162,7 +162,7 @@ When elevated, **cleanmgr** runs automatically after file cleanup (no separate p
 - **`[SUCCESS] No files matched the criteria.`** when the age filter leaves nothing to process (no attrib run).
 - **`[WARN]`** if any **`attrib`** calls returned non-zero.
 
-**Usage:** Paste into Windows PowerShell 5.1 or run `.\OneDriveFreeUpDiskSpace.ps1` from this folder.
+**Usage:** Paste into Windows PowerShell or run `.\OneDriveFreeUpDiskSpace.ps1` from this folder.
 
 ## SetPageFile.ps1
 
@@ -186,7 +186,7 @@ When elevated, **cleanmgr** runs automatically after file cleanup (no separate p
 
 **Validation:** No script-emitted completion line; verify in **System Properties → Advanced → Performance → Advanced → Virtual memory** after reboot, or use **`PageFileSizeCheck.ps1`** for on-disk **`C:\pagefile.sys`** size only.
 
-**Usage:** From an **elevated** Windows PowerShell 5.1 session: `.\SetPageFile.ps1` (after editing the script if defaults are wrong for the machine).
+**Usage:** From an **elevated** Windows PowerShell session: `.\SetPageFile.ps1` (after editing the script if defaults are wrong for the machine).
 
 ## PageFileSizeCheck.ps1
 
@@ -212,4 +212,4 @@ When elevated, **cleanmgr** runs automatically after file cleanup (no separate p
 - **`[SUCCESS] PageFileSizeCheck completed.`** after the report.
 - **`[ERROR]`** with message if **`Get-Item`** fails unexpectedly.
 
-**Usage:** Paste into Windows PowerShell 5.1 or run `.\PageFileSizeCheck.ps1` from this folder.
+**Usage:** Paste into Windows PowerShell or run `.\PageFileSizeCheck.ps1` from this folder.

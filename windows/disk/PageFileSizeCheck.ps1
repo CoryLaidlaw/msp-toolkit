@@ -1,5 +1,3 @@
-#requires -Version 5.1
-
 <#
 .SYNOPSIS
     Reports whether C:\pagefile.sys exists and its size on disk.

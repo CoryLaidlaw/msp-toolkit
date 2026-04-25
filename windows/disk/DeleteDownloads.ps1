@@ -1,6 +1,4 @@
-﻿#requires -Version 5.1
-
-<#
+﻿<#
 .SYNOPSIS
     Clears the Downloads folder under each profile directory beneath a chosen users root.
 .DESCRIPTION

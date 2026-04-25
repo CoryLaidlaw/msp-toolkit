@@ -1,51 +1,84 @@
-# Purpose: Finds all non-service and non-local user profiles 
-# on a PC and checks if they are located on the server or not.
-# If they are not then that means they are old users that have
-# been deleted from the server at this point. If they are on
-# the server then they could be disabled users or active users. 
-# Created By: Cory Laidlaw
+<#
+.SYNOPSIS
+    Exports local domain profile inventory and unresolved profiles to CSV.
+.DESCRIPTION
+    Prompts for domain short name, enumerates local non-special user profiles, resolves SID-to-account
+    mappings, and writes matched and unresolved results to C:\Temp CSV files. Designed for one-paste
+    execution with concise success/error outcomes.
+#>
 
-# Replace YOURDOMAINHERE with the domain name (do not include .local, .com, ect)
-$targetDomain = "DOMAIN"
+Set-StrictMode -Version Latest
+$ErrorActionPreference = 'Stop'
 
-# Initializes empty arrays to store users
-$matchedProfiles = @()
-$unresolvedProfiles = @()
+function Read-RequiredInput {
+    param(
+        [Parameter(Mandatory = $true)]
+        [string]$Prompt
+    )
 
-$profiles = Get-WmiObject Win32_UserProfile | Where-Object {
-    -not $_.Special -and $_.LocalPath -like "C:\Users\*" -and $_.SID -like "S-1-5-21*"
+    do {
+        $value = Read-Host -Prompt $Prompt
+    } while ([string]::IsNullOrWhiteSpace($value))
+
+    return $value.Trim()
 }
 
-# This does the actual comparison work to generate two arrays of users
-foreach ($profile in $profiles) {
-    try {
-        $user = New-Object System.Security.Principal.SecurityIdentifier($profile.SID)
-        $account = $user.Translate([System.Security.Principal.NTAccount]).Value  # e.g., DOMAIN\User
-        $parts = $account -split '\\'
-
-        if ($parts.Count -eq 2 -and $parts[0].ToUpper() -eq $targetDomain.ToUpper()) {
-            $matchedProfiles += [PSCustomObject]@{
-                Domain      = $parts[0]
-                Username    = $parts[1]
-                AccountName = $account
-                ProfilePath = $profile.LocalPath
-            }
-        }
-    } catch {
-        $userFolder = Split-Path $profile.LocalPath -Leaf
-        $unresolvedProfiles += [PSCustomObject]@{
-            Domain      = "UNKNOWN"
-            Username    = $userFolder
-            AccountName = "UNRESOLVED"
-            ProfilePath = $profile.LocalPath
-        }
+function Ensure-TempDirectory {
+    $tempPath = 'C:\Temp'
+    if (-not (Test-Path -Path $tempPath)) {
+        New-Item -Path $tempPath -ItemType Directory -Force | Out-Null
     }
 }
 
-# Exports arrays as seperate CSVs in C:\Temp
-$matchedProfiles | Export-Csv -Path "C:\Temp\DomainUserProfiles.csv" -NoTypeInformation
-$unresolvedProfiles | Export-Csv -Path "C:\Temp\DisabledUsers.csv" -NoTypeInformation
+try {
+    $targetDomain = Read-RequiredInput -Prompt 'Enter domain short name (example: CONTOSO, no .local/.com)'
+    $targetDomain = $targetDomain.ToUpperInvariant()
 
-# Output to console to indicate completion
-Write-Output "Exported profiles for domain '$targetDomain' to DomainUserProfiles.csv"
-Write-Output "Exported unresolved profiles to DisabledUsers.csv"
+    Ensure-TempDirectory
+
+    $matchedProfiles = @()
+    $unresolvedProfiles = @()
+
+    $profiles = Get-WmiObject Win32_UserProfile | Where-Object {
+        -not $_.Special -and $_.LocalPath -like 'C:\Users\*' -and $_.SID -like 'S-1-5-21*'
+    }
+
+    foreach ($profile in $profiles) {
+        try {
+            $user = New-Object System.Security.Principal.SecurityIdentifier($profile.SID)
+            $account = $user.Translate([System.Security.Principal.NTAccount]).Value
+            $parts = $account -split '\\'
+
+            if ($parts.Count -eq 2 -and $parts[0].ToUpperInvariant() -eq $targetDomain) {
+                $matchedProfiles += [PSCustomObject]@{
+                    Domain      = $parts[0]
+                    Username    = $parts[1]
+                    AccountName = $account
+                    ProfilePath = $profile.LocalPath
+                }
+            }
+        }
+        catch {
+            $userFolder = Split-Path $profile.LocalPath -Leaf
+            $unresolvedProfiles += [PSCustomObject]@{
+                Domain      = 'UNKNOWN'
+                Username    = $userFolder
+                AccountName = 'UNRESOLVED'
+                ProfilePath = $profile.LocalPath
+            }
+        }
+    }
+
+    $matchedPath = 'C:\Temp\DomainUserProfiles.csv'
+    $unresolvedPath = 'C:\Temp\DisabledUsers.csv'
+
+    $matchedProfiles | Export-Csv -Path $matchedPath -NoTypeInformation
+    $unresolvedProfiles | Export-Csv -Path $unresolvedPath -NoTypeInformation
+
+    Write-Output "[SUCCESS] Exported $($matchedProfiles.Count) domain profiles for '$targetDomain' to $matchedPath"
+    Write-Output "[SUCCESS] Exported $($unresolvedProfiles.Count) unresolved profiles to $unresolvedPath"
+}
+catch {
+    Write-Error "[ERROR] $($_.Exception.Message)"
+    exit 1
+}

@@ -20,7 +20,7 @@ Scripts SHOULD follow this order where practical:
 ## Authoring Rules
 
 - New script files SHOULD be named in **PascalCase** (see `docs/POWERSHELL_SCRIPT_STANDARDS.md`).
-- Scripts MUST run in Windows PowerShell `5.1`.
+- Scripts MUST run in Windows PowerShell on a default Windows 11 installation.
 - Scripts MUST be self-contained and one-paste runnable.
 - Scripts MUST NOT declare a script-level `param(...)` block; collect operator values with prompts (`Read-Host`, validation loops). Nested functions may use `param` internally.
 - Scripts MUST avoid non-default module dependencies.
@@ -28,11 +28,19 @@ Scripts SHOULD follow this order where practical:
 - Scripts MUST NOT open GUI elements or spawn new PowerShell windows/sessions.
 - Scripts SHOULD provide concise progress updates.
 - Comments SHOULD be minimal and reserved for non-obvious safety-critical behavior.
+- Scripts MUST begin with a concise comment-based help block that includes `.SYNOPSIS` and `.DESCRIPTION`.
 - File input/output SHOULD use `C:\Temp`, and scripts MUST create it before file operations when needed.
 
 ## Skeleton Pattern
 
 ```powershell
+<#
+.SYNOPSIS
+    One-line script purpose.
+.DESCRIPTION
+    Concise operational notes: input model, safety/impact, and key execution constraints.
+#>
+
 Set-StrictMode -Version Latest
 $ErrorActionPreference = 'Stop'
 $tempPath = 'C:\Temp'
@@ -105,3 +113,4 @@ Review this template whenever script standards change.
 - 2026-04-24: Initial template guidance created.
 - 2026-04-24: Added `C:\Temp` file I/O convention and creation snippet.
 - 2026-04-24: Documented no script-level `param`; prompts for operator input.
+- 2026-04-25: Added required concise `.SYNOPSIS`/`.DESCRIPTION` header in authoring rules and skeleton.

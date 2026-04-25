@@ -10,7 +10,7 @@ Use this checklist for script pull requests and direct repository updates.
 
 ## Hard Gate Checks (MUST Pass)
 
-- [ ] Runs in Windows PowerShell `5.1`.
+- [ ] Runs in Windows PowerShell on a default Windows 11 installation.
 - [ ] Requires no non-default modules, add-ins, or install steps.
 - [ ] Script is self-contained and supports one-paste execution.
 - [ ] Script has **no script-level** `param(...)` / `[CmdletBinding()]` operator parameters; required operator choices use **prompts** (`Read-Host` or equivalent), unless an approved exception exists.
@@ -33,6 +33,7 @@ If any hard gate fails, the change MUST be blocked until corrected or an approve
 
 - [ ] Naming is clear and action-oriented; folder readme entries use **PascalCase** for the `.ps1` name as defined in `docs/POWERSHELL_SCRIPT_STANDARDS.md`, and new or renamed scripts SHOULD use that PascalCase for the file on disk.
 - [ ] Comments are minimal and only used for non-obvious safety-critical behavior.
+- [ ] Script begins with a concise comment-based help header that includes `.SYNOPSIS` and `.DESCRIPTION`.
 - [ ] Script structure follows preferred flow where practical:
   1. Function declarations
   2. Input collection and validation
@@ -63,3 +64,4 @@ Review this checklist whenever script standards change.
 - 2026-04-24: Initial checklist created.
 - 2026-04-24: Added `C:\Temp` validation check for file operations.
 - 2026-04-24: Added hard gate for no script-level parameters (prompt-based input).
+- 2026-04-25: Added required concise `.SYNOPSIS`/`.DESCRIPTION` header check.

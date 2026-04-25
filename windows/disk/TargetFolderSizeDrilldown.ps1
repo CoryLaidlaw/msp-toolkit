@@ -1,5 +1,3 @@
-#requires -Version 5.1
-
 <#
 .SYNOPSIS
     Read-only folder size drilldown: expands subfolders that are large and dominant vs. siblings.
@@ -9,6 +7,9 @@
     parent. All settings are collected via Read-Host (no script parameters). Heavy disk I/O on
     large trees — run during a maintenance window when pointing at big paths.
 #>
+
+Set-StrictMode -Version Latest
+$ErrorActionPreference = 'Stop'
 
 function Get-FolderSize {
     param([string]$Path)

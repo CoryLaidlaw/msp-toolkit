@@ -1,5 +1,3 @@
-#requires -Version 5.1
-
 <#
 .SYNOPSIS
     Clears common Windows caches and temporary data on the system drive.
@@ -9,6 +7,9 @@
     Profile-bound steps run only when not executing as LocalSystem.
     All choices are made through Read-Host prompts (no script parameters).
 #>
+
+Set-StrictMode -Version Latest
+$ErrorActionPreference = 'Stop'
 
 function Test-ReadHostYes {
     param(

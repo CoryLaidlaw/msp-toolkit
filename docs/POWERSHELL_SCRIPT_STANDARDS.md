@@ -12,9 +12,9 @@ This document does not govern folder layout; folder governance is defined in `do
 
 ## Runtime Baseline
 
-- Scripts MUST run in Windows PowerShell `5.1` on a default Windows 11 installation.
+- Scripts MUST run in Windows PowerShell on a default Windows 11 installation.
 - Scripts MUST NOT require add-ins, third-party modules, or install-time setup.
-- Scripts MUST avoid features not available in Windows PowerShell `5.1`.
+- Scripts MUST avoid features not available in the default Windows PowerShell environment on Windows 11.
 - If a capability is not guaranteed on a fresh system, scripts SHOULD avoid depending on it.
 
 ## Dependency Rules
@@ -68,6 +68,14 @@ This document does not govern folder layout; folder governance is defined in `do
 - Scripts MAY omit comments when naming and flow are already clear.
 - Comments SHOULD be used only for non-obvious, safety-critical, or high-risk behavior.
 
+## Script Header Help
+
+- Scripts MUST start with a concise PowerShell comment-based help header using `<# ... #>`.
+- Header blocks MUST include `.SYNOPSIS` and `.DESCRIPTION`.
+- `.SYNOPSIS` SHOULD be one concise line that states script intent.
+- `.DESCRIPTION` SHOULD be brief operational context (input model, safety/impact, major behavior constraints).
+- Header content MUST stay concise and technician-focused; avoid long narrative prose.
+
 ## Script Naming Conventions
 
 - Script filenames MUST use `.ps1`.
@@ -90,7 +98,7 @@ Each folder readme that documents scripts SHOULD include:
 A new or updated script is considered compliant when:
 
 - Folder readme entries (and other documentation) refer to the script using the **PascalCase** `.ps1` spelling described in Script Naming Conventions; new or renamed scripts SHOULD use that same PascalCase for the file on disk.
-- It runs on Windows PowerShell `5.1` without non-default dependencies.
+- It runs on Windows PowerShell on a default Windows 11 installation without non-default dependencies.
 - It is self-contained and supports one-paste execution.
 - It does not use a script-level `param` block for operator input (prompts only), except where an approved exception exists in `docs/EXCEPTIONS_POLICY.md`.
 - It assumes SYSTEM/admin context and avoids end-user context dependencies.
@@ -98,6 +106,7 @@ A new or updated script is considered compliant when:
 - It provides practical progress/output updates.
 - It avoids prohibited patterns (GUI, new session/window spawning, multi-paste flow).
 - Any file-based input/output behavior uses `C:\Temp` and creates it if missing.
+- It includes a concise comment-based help header with `.SYNOPSIS` and `.DESCRIPTION`.
 
 ## Ownership And Review Cadence
 
@@ -113,3 +122,4 @@ This standard SHOULD be reviewed whenever script authoring expectations change a
 - 2026-04-24: Initial script standards created.
 - 2026-04-24: Standardized file input/output location to `C:\Temp` (create when needed).
 - 2026-04-24: Required prompt-based operator input; disallowed script-level `param` blocks for copy-paste execution.
+- 2026-04-25: Required concise script header help with `.SYNOPSIS` and `.DESCRIPTION`.

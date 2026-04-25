@@ -1,5 +1,3 @@
-#requires -Version 5.1
-
 <#
 .SYNOPSIS
     Wipes folder contents by mirroring an empty directory over the target with robocopy.

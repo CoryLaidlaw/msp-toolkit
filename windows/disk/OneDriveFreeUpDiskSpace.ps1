@@ -1,6 +1,4 @@
-﻿#requires -Version 5.1
-
-<#
+﻿<#
 .SYNOPSIS
     Marks older OneDrive files for cloud-only (dehydration) via attrib +U -P.
 .DESCRIPTION
