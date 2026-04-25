@@ -1,6 +1,8 @@
 Instructions to go here
 
-# NewUserOrCopy_Template.csv
+A starter CSV in this repository lives at: `data/templates/new-user-or-copy-template.csv` (copy to the machine or use your own path when the script asks).
+
+# new-user-or-copy-template.csv
 
 Action: N = new user, C = copy from an existing user.
 

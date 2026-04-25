@@ -1,0 +1,106 @@
+# PowerShell Script Standards
+
+## Purpose
+
+This document defines authoring and runtime standards for PowerShell scripts in this repository.
+
+## Scope
+
+This document governs script naming, structure, compatibility, interaction model, and prohibited patterns.
+
+This document does not govern folder layout; folder governance is defined in `docs/FOLDER_STRUCTURE.md`.
+
+## Runtime Baseline
+
+- Scripts MUST run in Windows PowerShell `5.1` on a default Windows 11 installation.
+- Scripts MUST NOT require add-ins, third-party modules, or install-time setup.
+- Scripts MUST avoid features not available in Windows PowerShell `5.1`.
+- If a capability is not guaranteed on a fresh system, scripts SHOULD avoid depending on it.
+
+## Dependency Rules
+
+- Scripts MUST be self-contained and runnable as a single pasted block.
+- Scripts MUST NOT require importing non-default modules.
+- Scripts MUST NOT require downloading tools, packages, or content at runtime.
+- Scripts MAY call built-in Windows tools when available by default.
+- Files that scripts save, stage, or read at runtime MUST use `C:\Temp` by default.
+- Scripts MUST create `C:\Temp` when needed before file operations.
+
+## Execution Context
+
+- Scripts MUST be written for execution as LocalSystem or an elevated administrative account.
+- Scripts MUST NOT assume execution as a standard end user.
+- Scripts MUST avoid reliance on interactive user profile/session artifacts unless clearly prompted and validated.
+
+## Script Structure And Flow
+
+- Scripts SHOULD use this structure:
+  1. Function declarations
+  2. Input collection and validation
+  3. Main execution
+- Scripts MUST support a one-paste flow: paste once, provide prompted inputs as needed, then execution proceeds.
+- Scripts MUST NOT rely on multi-stage paste workflows.
+
+## Input And Prompting
+
+- Values that require operator input MUST be prompted during execution.
+- Scripts SHOULD gather most inputs near startup when practical.
+- Scripts MUST validate critical inputs before performing changes.
+- Scripts SHOULD provide clear prompt text and input expectations.
+
+## Progress And Output
+
+- Scripts SHOULD provide concise progress updates where practical.
+- Scripts MUST emit clear completion and error outcomes.
+- Status output SHOULD be readable in non-interactive backend execution logs.
+
+## Prohibited Patterns
+
+- Scripts MUST NOT open GUI windows, dialogs, or forms.
+- Scripts MUST NOT launch new PowerShell sessions/windows as part of normal flow.
+- Scripts MUST NOT require manual edits to script source before execution.
+
+## Comments And Readability
+
+- Comments SHOULD be minimal.
+- Scripts MAY omit comments when naming and flow are already clear.
+- Comments SHOULD be used only for non-obvious, safety-critical, or high-risk behavior.
+
+## Script Naming Conventions
+
+- Script filenames MUST use `.ps1`.
+- Script names SHOULD be clear, action-oriented, and descriptive of task scope.
+- Script names SHOULD avoid temporary/version suffixes such as `v2`, `new`, `final`.
+
+## Per-Folder README Expectations
+
+Each folder readme that documents scripts SHOULD include:
+
+- Script purpose summary.
+- Required operator inputs/prompts.
+- High-level commands/functions used.
+- Safety and impact notes where applicable.
+
+## Definition Of Done For Script Changes
+
+A new or updated script is considered compliant when:
+
+- It runs on Windows PowerShell `5.1` without non-default dependencies.
+- It is self-contained and supports one-paste execution.
+- It assumes SYSTEM/admin context and avoids end-user context dependencies.
+- It prompts for required inputs and validates critical values.
+- It provides practical progress/output updates.
+- It avoids prohibited patterns (GUI, new session/window spawning, multi-paste flow).
+- Any file-based input/output behavior uses `C:\Temp` and creates it if missing.
+
+## Ownership And Review Cadence
+
+- Owner: repository maintainers.
+- Last reviewed: 2026-04-24.
+
+This standard SHOULD be reviewed whenever script authoring expectations change and at least quarterly during active repository modernization.
+
+## Change Log
+
+- 2026-04-24: Initial script standards created.
+- 2026-04-24: Standardized file input/output location to `C:\Temp` (create when needed).
