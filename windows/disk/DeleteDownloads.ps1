@@ -112,12 +112,15 @@ Write-Host ""
 
 if (-not (Test-ReadHostYes -Prompt 'Continue with Downloads cleanup? (Y/N)')) {
     Write-Host 'Aborted by operator.'
-    exit 0
+    return
 }
 
 try {
-    $exitCode = Invoke-Main -UsersRootPath $usersRoot
-    exit $exitCode
+    $statusCode = Invoke-Main -UsersRootPath $usersRoot
+    if ($statusCode -ne 0) {
+        Write-Error "[ERROR] DeleteDownloads completed with status code $statusCode."
+        return
+    }
 }
 catch {
     Write-Error "[ERROR] $($_.Exception.Message)"

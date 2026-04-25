@@ -32,6 +32,7 @@ Scripts SHOULD follow this order where practical:
 - Scripts MUST begin with a concise comment-based help block that includes `.SYNOPSIS` and `.DESCRIPTION`.
 - File input/output SHOULD use `C:\Temp`, and scripts MUST create it before file operations when needed.
 - Scripts MUST route executable runtime flow through a main function and call it once at the end to avoid chunked-paste `if/else` detachment issues.
+- Scripts MUST NOT use script-scope `exit`; return status via function return values and clear output instead.
 
 ## Skeleton Pattern
 
@@ -78,9 +79,12 @@ function Invoke-Main {
 
 try {
     $target = Read-RequiredInput -Prompt 'Enter target value'
-    $code = Invoke-Main -Target $target
+    $statusCode = Invoke-Main -Target $target
     Write-Host '[SUCCESS] Script completed successfully.'
-    exit $code
+    if ($statusCode -ne 0) {
+        Write-Error "[ERROR] Script completed with status code $statusCode."
+        return
+    }
 }
 catch {
     Write-Error "[ERROR] $($_.Exception.Message)"
@@ -118,3 +122,4 @@ Review this template whenever script standards change.
 - 2026-04-24: Documented no script-level `param`; prompts for operator input.
 - 2026-04-25: Added required concise `.SYNOPSIS`/`.DESCRIPTION` header in authoring rules and skeleton.
 - 2026-04-25: Added `Invoke-Main` entry-point requirement and skeleton exit-code pattern for chunked-paste resilience.
+- 2026-04-25: Prohibited script-scope `exit` and updated skeleton to avoid terminating interactive sessions.

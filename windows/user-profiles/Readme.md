@@ -10,7 +10,7 @@ These scripts are intended for LocalSystem or elevated admin execution contexts.
 
 ## Validation Guidance
 
-Successful runs should produce explicit `[SUCCESS]`/`[INFO]` output lines and expected CSV files in `C:\Temp` where applicable. Failures should emit `[ERROR]` output and stop with a non-zero exit.
+Successful runs should produce explicit `[SUCCESS]`/`[INFO]` output lines and expected CSV files in `C:\Temp` where applicable. Failures should emit `[ERROR]` output without terminating the active PowerShell session.
 
 ## GetUserListAsCsv.ps1
 - Purpose: Enumerate local non-special user profiles and export domain-matched profiles plus unresolved profiles.

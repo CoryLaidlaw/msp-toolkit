@@ -33,8 +33,11 @@ function Invoke-Main {
 }
 
 try {
-    $code = Invoke-Main
-    exit $code
+    $statusCode = Invoke-Main
+    if ($statusCode -ne 0) {
+        Write-Error "[ERROR] PageFileSizeCheck completed with status code $statusCode."
+        return
+    }
 }
 catch {
     Write-Host "[ERROR] $($_.Exception.Message)" -ForegroundColor Red

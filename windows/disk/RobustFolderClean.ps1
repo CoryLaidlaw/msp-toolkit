@@ -127,8 +127,11 @@ function Invoke-Main {
 }
 
 try {
-    $code = Invoke-Main
-    exit $code
+    $statusCode = Invoke-Main
+    if ($statusCode -ne 0) {
+        Write-Error "[ERROR] RobustFolderClean completed with status code $statusCode."
+        return
+    }
 }
 catch {
     Write-Error "[ERROR] $($_.Exception.Message)"

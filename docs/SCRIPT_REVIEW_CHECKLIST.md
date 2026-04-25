@@ -28,6 +28,7 @@ If any hard gate fails, the change MUST be blocked until corrected or an approve
 - [ ] Script provides clear completion and error outcomes.
 - [ ] Script avoids multi-stage "paste more later" behavior.
 - [ ] Any runtime file read/write/staging uses `C:\Temp`, and the script creates it if missing.
+- [ ] Script does not use script-scope `exit` that would terminate the current PowerShell session.
 
 ## Readability And Maintainability Checks
 
@@ -67,3 +68,4 @@ Review this checklist whenever script standards change.
 - 2026-04-24: Added hard gate for no script-level parameters (prompt-based input).
 - 2026-04-25: Added main-function entry-point check for chunked-paste resilience.
 - 2026-04-25: Added required concise `.SYNOPSIS`/`.DESCRIPTION` header check.
+- 2026-04-25: Added check blocking script-scope `exit` that terminates interactive shells.

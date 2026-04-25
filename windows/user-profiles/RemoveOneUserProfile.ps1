@@ -52,7 +52,7 @@ function Invoke-Main {
     if ($null -eq $matchingProfiles -or $matchingProfiles.Count -eq 0) {
         Write-Output "[WARN] No profile was found at path '$profilePath'."
         Show-FreeSpace
-        exit 1
+        return 1
     }
 
     foreach ($profile in $matchingProfiles) {
@@ -66,11 +66,14 @@ function Invoke-Main {
 }
 
 try {
-    $code = Invoke-Main
-    exit $code
+    $statusCode = Invoke-Main
+    if ($statusCode -ne 0) {
+        Write-Error "[ERROR] RemoveOneUserProfile completed with status code $statusCode."
+        return
+    }
 }
 catch {
     Write-Error "[ERROR] $($_.Exception.Message)"
     Show-FreeSpace
-    exit 1
+    return
 }

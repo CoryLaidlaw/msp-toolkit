@@ -151,12 +151,12 @@ function Invoke-Main {
 $onedrivePath = Read-OneDriveRootPath
 if ([string]::IsNullOrWhiteSpace($onedrivePath)) {
     Write-Host '[ERROR] No path entered.' -ForegroundColor Red
-    exit 1
+    return
 }
 
 if (-not (Test-Path -LiteralPath $onedrivePath -PathType Container)) {
     Write-Host "[ERROR] Path not found or not a folder: $onedrivePath" -ForegroundColor Red
-    exit 1
+    return
 }
 
 $daysOld = Read-PositiveIntDays

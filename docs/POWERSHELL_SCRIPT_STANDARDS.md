@@ -42,6 +42,7 @@ This document does not govern folder layout; folder governance is defined in `do
 - Scripts MUST NOT rely on multi-stage paste workflows.
 - Scripts MUST keep executable control flow inside a main function (for example `Invoke-Main`) and invoke it once at the end.
 - Scripts MUST avoid top-level detached control-flow blocks that can break in chunked interactive paste (for example top-level `if/else` pairs split across chunks).
+- Scripts MUST NOT call `exit` from script scope, because it can terminate the operator shell/session during paste execution.
 
 ## Input And Prompting
 
@@ -109,6 +110,7 @@ A new or updated script is considered compliant when:
 - It avoids prohibited patterns (GUI, new session/window spawning, multi-paste flow).
 - Any file-based input/output behavior uses `C:\Temp` and creates it if missing.
 - It includes a concise comment-based help header with `.SYNOPSIS` and `.DESCRIPTION`.
+- It does not terminate the operator shell/session (no script-scope `exit`).
 
 ## Ownership And Review Cadence
 
@@ -126,3 +128,4 @@ This standard SHOULD be reviewed whenever script authoring expectations change a
 - 2026-04-24: Required prompt-based operator input; disallowed script-level `param` blocks for copy-paste execution.
 - 2026-04-25: Required main-function execution wrapper (`Invoke-Main` pattern) for chunked paste resilience.
 - 2026-04-25: Required concise script header help with `.SYNOPSIS` and `.DESCRIPTION`.
+- 2026-04-25: Prohibited script-scope `exit` to prevent terminating interactive operator sessions.
