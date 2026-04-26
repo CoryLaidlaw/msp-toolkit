@@ -1,0 +1,2 @@
+PrinterName,DriverName,PortName,PrinterHostAddress,Shared,ShareName
+HP-Lobby-Laser,HP Universal Printing PCL 6,IP_10.10.20.45,10.10.20.45,True,HP-Lobby-Laser

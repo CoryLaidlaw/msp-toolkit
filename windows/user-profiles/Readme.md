@@ -39,6 +39,15 @@ Successful runs should produce explicit `[SUCCESS]`/`[INFO]` output lines and ex
 - Impact: Destructive; permanently removes one matching local profile.
 - Validation: Success output confirms profile removal; warning path reports not found; free-space line always printed.
 
+## RemoveOldDomainProfiles.ps1
+- Purpose: Find **domain-linked** local profiles (ProfileList SIDs longer than 20 characters) whose **LocalProfileLoadTime** maps to a datetime **older than N days**, list them, then optionally delete matching **Win32_UserProfile** instances via **CIM** (`Remove-CimInstance`).
+- Required inputs: Prompted **days** threshold (positive integer, max 36500); **Y/N** confirmation listing the flagged profiles before deletion.
+- Assumptions: Run as **LocalSystem** or elevated admin; **ProfileList** timestamps are treated as an approximate “last use” signal (not identical to interactive logon auditing).
+- File path behavior: No CSV I/O; no `C:\Temp` requirement for this script.
+- Key commands/functions: `Read-Host`, `Get-ItemProperty` (ProfileList), `Get-CimInstance` / `Remove-CimInstance` (`Win32_UserProfile`), `Write-Progress`.
+- Impact: **Destructive** for confirmed profiles; removes local profile data and profile registry state for each successful CIM removal.
+- Validation: Table of candidates prints before confirmation; per-path **Deleted** / **skipping** / **Failed** lines summarize the run.
+
 ## RemoveMultipleUserProfile.ps1
 - Purpose: Bulk remove local user profiles listed in `DisabledUsers.csv`.
 - Required inputs: No prompt; reads `C:\Temp\DisabledUsers.csv`.
@@ -47,3 +56,8 @@ Successful runs should produce explicit `[SUCCESS]`/`[INFO]` output lines and ex
 - Key commands/functions: `Import-Csv`, `Get-WmiObject Win32_UserProfile`, `.Delete()`, `Get-PSDrive`.
 - Impact: Destructive; permanently removes each matching profile path listed in the CSV.
 - Validation: Summary output reports Deleted/NotFound/Failed/Skipped counts and free-space line is printed.
+
+## Ownership and last reviewed
+
+- Owner: repository maintainers
+- Last reviewed: 2026-04-25

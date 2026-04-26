@@ -17,7 +17,6 @@ Allowed top-level directories in this repository:
 - `windows/`: operational PowerShell content grouped by Windows support domain.
 - `data/`: non-sensitive sample data and templates.
 - `docs/`: governance and reference documentation.
-- `lib/`: reserved for shared authoring source.
 - `m365/`: reserved for Microsoft 365 domain content.
 
 Root files such as `README.md` and `LICENSE` are expected.

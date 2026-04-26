@@ -2,6 +2,32 @@
 
 PowerShell helpers for disk space, cleanup, and sizing.
 
+## Folder purpose summary
+
+This folder contains operational scripts for disk cleanup, storage analysis, and page file checks/configuration on Windows endpoints.
+
+## Script inventory
+
+- `DiskCleanup.ps1`
+- `TargetFolderSizeDrilldown.ps1`
+- `FolderSizeByExtension.ps1`
+- `DeleteDownloads.ps1`
+- `RobustFolderClean.ps1`
+- `OneDriveFreeUpDiskSpace.ps1`
+- `SetPageFile.ps1`
+- `PageFileSizeCheck.ps1`
+
+## Safety and impact notes
+
+- Several scripts are destructive (`DiskCleanup.ps1`, `DeleteDownloads.ps1`, `RobustFolderClean.ps1`, and `SetPageFile.ps1`).
+- Read-only sizing/reporting scripts can still be resource-intensive on large folder trees.
+- Confirm execution context (Administrator vs LocalSystem vs interactive user) before running.
+
+## Validation guidance
+
+- Look for explicit `[SUCCESS]`, `[OK]`, `[WARN]`, and `[ERROR]` lines in script output.
+- Verify resulting state (free space changes, file presence, page file config) instead of relying on console messages alone.
+
 ## DiskCleanup.ps1
 
 **Purpose:** Clear common Windows temporary data and caches on `C:`, and when elevated run the Disk Cleanup utility (`cleanmgr`) and DISM component cleanup.
@@ -24,6 +50,8 @@ When elevated, **cleanmgr** runs automatically after file cleanup (no separate p
 - Does **not** delete files from **`C:\Windows\Installer`** (avoids breaking uninstall/repair).
 
 **Commands and APIs used:** `Get-PSDrive`, `Get-ChildItem`, `Remove-Item`, `Clear-RecycleBin`, `New-Item`, `Start-Process` (`cleanmgr.exe`, `Dism.exe`), `Set-ItemProperty` (VolumeCaches for cleanmgr), `Read-Host`.
+
+**File path behavior:** Creates `C:\Temp` if missing; deletes contents of `C:\Temp`; also clears additional fixed cleanup targets (`C:\Windows\Temp`, WER queues, IIS logs when present, and other documented paths).
 
 **Safety / impact:**
 
@@ -53,6 +81,8 @@ When elevated, **cleanmgr** runs automatically after file cleanup (no separate p
 
 **Commands and APIs used:** `Read-Host`, `Test-Path`, `Get-ChildItem`, `Measure-Object`, `Write-Host`, `[decimal]::TryParse`, `[System.Collections.Generic.List[PSCustomObject]]`.
 
+**File path behavior:** Reads only from the operator-specified root path (default `C:\Users`); no files are created or modified.
+
 **Safety / impact:**
 
 - **No deletions or configuration changes** — sizing only.
@@ -81,6 +111,8 @@ When elevated, **cleanmgr** runs automatically after file cleanup (no separate p
 - Recursively enumerates **files only** (not directories), groups by **`Extension`**, aggregates size with **`Measure-Object`**, prints a table, then a **`[SUCCESS]`** line with file and group counts.
 
 **Commands and APIs used:** `Read-Host`, `Test-Path`, `Get-ChildItem`, `Group-Object`, `Measure-Object`, `Sort-Object`, `Format-Table`, `Write-Host`.
+
+**File path behavior:** Reads only from the operator-specified root path (default `C:\Users`); no files are created or modified.
 
 **Safety / impact:**
 
@@ -113,6 +145,8 @@ When elevated, **cleanmgr** runs automatically after file cleanup (no separate p
 - Prints **C:** free space at the end when the **C:** drive is available.
 
 **Commands and APIs used:** `Read-Host`, `Get-ChildItem`, `Test-Path`, `Remove-Item`, `Get-PSDrive`, `[Security.Principal.WindowsPrincipal]` (admin test).
+
+**File path behavior:** Reads profile folders under the operator-selected users root (default `C:\Users`) and deletes contents under each `Downloads` subfolder.
 
 **Safety / impact:**
 
@@ -207,6 +241,8 @@ When elevated, **cleanmgr** runs automatically after file cleanup (no separate p
 - Sets **`HKLM:\SYSTEM\CurrentControlSet\Control\Session Manager\Memory Management\PagingFiles`** to the configured string.
 
 **Commands and APIs used:** `Get-CimInstance`, `Set-CimInstance`, `Set-ItemProperty`.
+
+**File path behavior:** Writes page file configuration to `HKLM:\SYSTEM\CurrentControlSet\Control\Session Manager\Memory Management\PagingFiles`; no `C:\Temp` usage.
 
 **Safety / impact:**
 
