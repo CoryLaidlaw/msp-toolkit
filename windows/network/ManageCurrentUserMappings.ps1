@@ -169,10 +169,8 @@ function Get-PrinterMappingsForSid {
 
 function Show-CurrentMappings {
     param(
-        [Parameter(Mandatory)]
-        [object[]]$Drives,
-        [Parameter(Mandatory)]
-        [object[]]$Printers
+        [object[]]$Drives = @(),
+        [object[]]$Printers = @()
     )
 
     Write-Host ''
@@ -275,8 +273,7 @@ function Remove-MappedDrive {
 
 function Invoke-DeleteAction {
     param(
-        [Parameter(Mandatory)]
-        [object[]]$Drives
+        [object[]]$Drives = @()
     )
 
     Write-Host ''

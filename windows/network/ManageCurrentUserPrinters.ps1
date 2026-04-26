@@ -126,8 +126,7 @@ function Get-PrinterConnectionsForSid {
 
 function Show-MappedPrinterConnections {
     param(
-        [Parameter(Mandatory)]
-        [object[]]$Printers
+        [object[]]$Printers = @()
     )
 
     Write-Host ''
@@ -286,7 +285,7 @@ function Add-NetworkPrintersFromCsv {
         }
         catch {
             $fail++
-            Write-Warning "Failed to add $connectionName: $($_.Exception.Message)"
+            Write-Warning "Failed to add $($connectionName): $($_.Exception.Message)"
         }
     }
 
@@ -410,7 +409,7 @@ function Add-LocalPrintersFromCsv {
         }
         catch {
             $fail++
-            Write-Warning "Failed to add $printerName: $($_.Exception.Message)"
+            Write-Warning "Failed to add $($printerName): $($_.Exception.Message)"
         }
     }
 
@@ -445,8 +444,7 @@ function Invoke-AddAction {
 
 function Invoke-DeleteAction {
     param(
-        [Parameter(Mandatory)]
-        [object[]]$MappedPrinters
+        [object[]]$MappedPrinters = @()
     )
 
     Write-Host ''
@@ -562,7 +560,7 @@ function Invoke-RenameActionCsv {
         }
         catch {
             $fail++
-            Write-Warning "Error renaming printer $oldName: $($_.Exception.Message)"
+            Write-Warning "Error renaming printer $($oldName): $($_.Exception.Message)"
         }
     }
 
