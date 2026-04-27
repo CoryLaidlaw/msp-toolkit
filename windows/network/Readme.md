@@ -54,13 +54,12 @@ This folder contains technician scripts for subnet reachability scanning and cur
 
 ## ManageCurrentUserMappings.ps1
 
-**Purpose:** Current-user mapping manager for drive mappings with context display of printer mappings. Resolves current user SID from loaded hives, shows mapped drives/printers, then provides actions to add/remove mapped drives or exit.
+**Purpose:** Current-user mapping manager for drive mappings. Resolves current user SID from loaded hives, shows mapped drives, then provides actions to add/remove mapped drives or exit.
 
 **Safety / impact:**
 
 - **Destructive actions exist** for mapped drives (add/remove drive mappings).
 - Scope is **current loaded user context** only; no multi-user operation.
-- Printer entries are displayed for context and are not changed by this script.
 
 **Execution context:** Elevated technician/admin session is recommended for reliable context resolution and mapping visibility.
 
