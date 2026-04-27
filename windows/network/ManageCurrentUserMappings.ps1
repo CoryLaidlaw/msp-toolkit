@@ -1,10 +1,9 @@
 <#
 .SYNOPSIS
-    Manages mapped drives for the current user and displays current-user printer mappings.
+    Manages mapped drives for the current user.
 .DESCRIPTION
-    Resolves current user SID from loaded HKEY_USERS and presents a menu to view mappings, add mapped drives (manual or
-    CSV), remove mapped drives (selection or CSV), or exit. Also displays current-user HKU printer connection entries
-    for context. CSV paths are prompted and must be under C:\Temp.
+    Resolves current user SID from loaded HKEY_USERS and presents a menu to view drive mappings, add mapped drives
+    (manual or CSV), remove mapped drives (selection or CSV), or exit. CSV paths are prompted and must be under C:\Temp.
 #>
 
 Set-StrictMode -Version Latest
@@ -149,28 +148,9 @@ function Get-MappedDrivesForSid {
     })
 }
 
-function Get-PrinterMappingsForSid {
-    param(
-        [Parameter(Mandatory)]
-        [string]$Sid
-    )
-
-    $printerPath = "Registry::HKEY_USERS\$Sid\Printers\Connections"
-    if (-not (Test-Path -LiteralPath $printerPath)) {
-        return @()
-    }
-
-    return @(Get-ChildItem -LiteralPath $printerPath -ErrorAction SilentlyContinue | ForEach-Object {
-        [pscustomobject]@{
-            ConnectionName = $_.PSChildName
-        }
-    })
-}
-
 function Show-CurrentMappings {
     param(
-        [object[]]$Drives = @(),
-        [object[]]$Printers = @()
+        [object[]]$Drives = @()
     )
 
     Write-Host ''
@@ -185,16 +165,6 @@ function Show-CurrentMappings {
         }
     }
 
-    Write-Host ''
-    Write-Host 'Mapped Printer Connections:' -ForegroundColor Green
-    if ($Printers.Count -eq 0) {
-        Write-Host '  (none found)' -ForegroundColor DarkYellow
-    }
-    else {
-        foreach ($p in $Printers) {
-            Write-Host "  $($p.ConnectionName)"
-        }
-    }
 }
 
 function Add-MappedDrive {
@@ -345,8 +315,7 @@ function Invoke-Main {
 
     while ($true) {
         $drives = @(Get-MappedDrivesForSid -Sid $context.Sid)
-        $printers = @(Get-PrinterMappingsForSid -Sid $context.Sid)
-        Show-CurrentMappings -Drives $drives -Printers $printers
+        Show-CurrentMappings -Drives $drives
 
         Write-Host ''
         Write-Host 'Actions:' -ForegroundColor Yellow
