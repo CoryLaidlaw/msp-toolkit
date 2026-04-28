@@ -39,11 +39,11 @@ function Show-FolderTree {
     )
 
     $indent = '  ' * $Depth
-    $subFolders = Get-ChildItem -Path $Path -Directory -Force -ErrorAction SilentlyContinue
+    $subFolders = @(Get-ChildItem -Path $Path -Directory -Force -ErrorAction SilentlyContinue)
 
     if (-not $subFolders) { return }
 
-    $children = foreach ($folder in $subFolders) {
+    $children = @(foreach ($folder in $subFolders) {
         Write-Progress-Line "[Scanning] $($folder.FullName)"
         $sizeBytes = Get-FolderSize -Path $folder.FullName
         $sizeGB = [Math]::Round($sizeBytes / 1GB, 2)
@@ -58,7 +58,7 @@ function Show-FolderTree {
             SizeGB      = $sizeGB
             PctOfParent = $pct
         }
-    }
+    })
 
     Clear-Progress-Line
 
@@ -66,7 +66,7 @@ function Show-FolderTree {
         ($children | Measure-Object -Property PctOfParent -Average).Average
     } else { 0 }
 
-    $qualifies = foreach ($c in $children) {
+    $qualifies = @(foreach ($c in $children) {
         $gap = $c.PctOfParent - $avgPct
         $meetsSize = $c.SizeGB -gt $script:SizeThresholdGB
         $meetsDominance = $gap -gt $script:DominanceGap
@@ -75,9 +75,9 @@ function Show-FolderTree {
             Gap          = [Math]::Round($gap, 2)
             ShouldExpand = ($meetsSize -and $meetsDominance)
         }
-    }
+    })
 
-    $toExpand = $qualifies | Where-Object { $_.ShouldExpand }
+    $toExpand = @($qualifies | Where-Object { $_.ShouldExpand })
 
     if ($toExpand) {
         $expandNames = ($toExpand | ForEach-Object {
