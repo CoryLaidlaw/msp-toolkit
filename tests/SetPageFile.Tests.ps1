@@ -20,10 +20,13 @@
 #Requires -Modules @{ ModuleName = 'Pester'; ModuleVersion = '5.0.0' }
 
 BeforeAll {
-    $script:ScriptPath = Join-Path $PSScriptRoot 'SetPageFile.ps1'
+    # Test file lives in <repo>/tests, the script under test lives in
+    # <repo>/windows/disk/SetPageFile.ps1.
+    $script:ScriptPath = Join-Path $PSScriptRoot '..' 'windows' 'disk' 'SetPageFile.ps1'
     if (-not (Test-Path -LiteralPath $script:ScriptPath)) {
-        throw "SetPageFile.ps1 not found next to test file at: $script:ScriptPath"
+        throw "SetPageFile.ps1 not found at expected path: $script:ScriptPath"
     }
+    $script:ScriptPath = (Resolve-Path -LiteralPath $script:ScriptPath).Path
 
     # The production script ends with a top-level try { Invoke-Main } catch
     # block that auto-executes on dot-source. To load the function
