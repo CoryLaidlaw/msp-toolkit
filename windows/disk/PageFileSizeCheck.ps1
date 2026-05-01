@@ -15,15 +15,15 @@ function Get-PagefileSizeReport {
     )
 
     if (-not (Test-Path -LiteralPath $LiteralPath -PathType Leaf)) {
-        Write-Output "File does not exist: $LiteralPath"
+        Write-Host "File does not exist: $LiteralPath"
         return
     }
 
     $item = Get-Item -LiteralPath $LiteralPath -Force -ErrorAction Stop
     $sizeBytes = $item.Length
     $sizeGB = [Math]::Round($sizeBytes / 1GB, 4)
-    Write-Output "Path: $LiteralPath"
-    Write-Output "Size: $sizeGB GB ($sizeBytes bytes)"
+    Write-Host "Path: $LiteralPath"
+    Write-Host "Size: $sizeGB GB ($sizeBytes bytes)"
 }
 
 function Invoke-Main {
