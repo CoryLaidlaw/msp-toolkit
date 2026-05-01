@@ -85,6 +85,51 @@ function Invoke-DismWithExitCheck {
     }
 }
 
+function Clear-AllRecycleBin {
+    Write-Output 'Cleaning: Recycle Bin (all users, all fixed drives)'
+
+    try {
+        $driveRoots = Get-CimInstance -ClassName Win32_LogicalDisk -Filter 'DriveType=3' -ErrorAction Stop |
+            ForEach-Object { "$($_.DeviceID)\" }
+    }
+    catch {
+        $driveRoots = Get-PSDrive -PSProvider FileSystem -ErrorAction SilentlyContinue |
+            Where-Object { $_.Root -match '^[A-Za-z]:\\$' } |
+            ForEach-Object { $_.Root }
+    }
+
+    $touched = $false
+    foreach ($root in $driveRoots) {
+        $binRoot = Join-Path $root '$Recycle.Bin'
+        if (-not (Test-Path -LiteralPath $binRoot)) { continue }
+
+        $sidFolders = Get-ChildItem -LiteralPath $binRoot -Force -Directory -ErrorAction SilentlyContinue |
+            Where-Object { $_.Name -like 'S-1-5-*' }
+
+        foreach ($sidFolder in $sidFolders) {
+            try {
+                $items = Get-ChildItem -LiteralPath $sidFolder.FullName -Force -ErrorAction SilentlyContinue |
+                    Where-Object { $_.Name -ne 'desktop.ini' }
+                $count = ($items | Measure-Object).Count
+                if ($count -gt 0) {
+                    foreach ($item in $items) {
+                        Remove-Item -LiteralPath $item.FullName -Recurse -Force -ErrorAction SilentlyContinue
+                    }
+                    $touched = $true
+                    Write-Output "  Removed $count item(s) under $($sidFolder.FullName)"
+                }
+            }
+            catch {
+                Write-Warning "Could not clear $($sidFolder.FullName) — $($_.Exception.Message)"
+            }
+        }
+    }
+
+    if (-not $touched) {
+        Write-Output '  Recycle Bin already empty.'
+    }
+}
+
 function Invoke-CleanMgrSageRun {
     $volumeCachesPath = 'HKLM:\SOFTWARE\Microsoft\Windows\CurrentVersion\Explorer\VolumeCaches'
     if (-not (Test-Path -LiteralPath $volumeCachesPath)) {
@@ -150,19 +195,7 @@ function Invoke-Main {
     }
     Remove-FilesSafely -Path 'C:\Temp' -Description 'C:\Temp folder'
 
-    if (-not $isSystem) {
-        Write-Output 'Emptying Recycle Bin...'
-        try {
-            Clear-RecycleBin -Force -ErrorAction Stop
-            Write-Output '  Recycle Bin emptied.'
-        }
-        catch {
-            Write-Warning "Could not empty Recycle Bin — $($_.Exception.Message)"
-        }
-    }
-    else {
-        Write-Output 'Skipping Recycle Bin (running as LocalSystem; no user shell context).'
-    }
+    Clear-AllRecycleBin
 
     if ($isAdmin) {
         Remove-FilesSafely -Path 'C:\Windows\SoftwareDistribution\Download' -Description 'Windows Update cache'
