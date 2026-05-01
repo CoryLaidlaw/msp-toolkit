@@ -98,7 +98,7 @@ function Invoke-CleanMgrSageRun {
             Set-ItemProperty -Path $cache.PSPath -Name 'StateFlags0001' -Value 2 -ErrorAction SilentlyContinue
         }
 
-        $proc = Start-Process -FilePath 'cleanmgr.exe' -ArgumentList '/sagerun:1' -Wait -NoNewWindow -WindowStyle Hidden -PassThru
+        $proc = Start-Process -FilePath 'cleanmgr.exe' -ArgumentList '/sagerun:1' -Wait -WindowStyle Hidden -PassThru
         if ($proc.ExitCode -ne 0) {
             Write-Warning "cleanmgr exited with code $($proc.ExitCode)."
         }
@@ -150,13 +150,18 @@ function Invoke-Main {
     }
     Remove-FilesSafely -Path 'C:\Temp' -Description 'C:\Temp folder'
 
-    Write-Output 'Emptying Recycle Bin...'
-    try {
-        Clear-RecycleBin -Force -ErrorAction Stop
-        Write-Output '  Recycle Bin emptied.'
+    if (-not $isSystem) {
+        Write-Output 'Emptying Recycle Bin...'
+        try {
+            Clear-RecycleBin -Force -ErrorAction Stop
+            Write-Output '  Recycle Bin emptied.'
+        }
+        catch {
+            Write-Warning "Could not empty Recycle Bin — $($_.Exception.Message)"
+        }
     }
-    catch {
-        Write-Warning "Could not empty Recycle Bin — $($_.Exception.Message)"
+    else {
+        Write-Output 'Skipping Recycle Bin (running as LocalSystem; no user shell context).'
     }
 
     if ($isAdmin) {
