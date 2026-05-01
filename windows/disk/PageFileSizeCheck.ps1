@@ -3,6 +3,10 @@
     Reports whether C:\pagefile.sys exists and its size on disk.
 .DESCRIPTION
     Read-only check of C:\pagefile.sys. No prompts or script parameters.
+    Queries CIM (Win32_PageFileUsage / Win32_PageFileSetting / Win32_ComputerSystem)
+    rather than Test-Path, because pagefile.sys is held with an exclusive
+    handle by the OS Memory Manager and the FileSystem provider reports it
+    as missing on access-denied.
 #>
 
 Set-StrictMode -Version Latest
@@ -14,16 +18,72 @@ function Get-PagefileSizeReport {
         [string]$LiteralPath
     )
 
-    if (-not (Test-Path -LiteralPath $LiteralPath -PathType Leaf)) {
-        Write-Host "File does not exist: $LiteralPath"
-        return
+    $reported = $false
+
+    try {
+        $usage = Get-CimInstance -ClassName Win32_PageFileUsage -ErrorAction Stop |
+            Where-Object { $_.Name -ieq $LiteralPath }
+        foreach ($u in $usage) {
+            $reported = $true
+            Write-Host "Active pagefile: $($u.Name)"
+            Write-Host "  Allocated:    $($u.AllocatedBaseSize) MB"
+            Write-Host "  Current use:  $($u.CurrentUsage) MB"
+            Write-Host "  Peak use:     $($u.PeakUsage) MB"
+        }
+    }
+    catch {
+        Write-Host "Win32_PageFileUsage query failed: $($_.Exception.Message)"
     }
 
-    $item = Get-Item -LiteralPath $LiteralPath -Force -ErrorAction Stop
-    $sizeBytes = $item.Length
-    $sizeGB = [Math]::Round($sizeBytes / 1GB, 4)
-    Write-Host "Path: $LiteralPath"
-    Write-Host "Size: $sizeGB GB ($sizeBytes bytes)"
+    try {
+        $setting = Get-CimInstance -ClassName Win32_PageFileSetting -ErrorAction Stop |
+            Where-Object { $_.Name -ieq $LiteralPath }
+        foreach ($s in $setting) {
+            Write-Host "Configured pagefile: $($s.Name)"
+            Write-Host "  Initial size: $($s.InitialSize) MB (0 = system-managed)"
+            Write-Host "  Maximum size: $($s.MaximumSize) MB (0 = system-managed)"
+            $reported = $true
+        }
+    }
+    catch {
+        Write-Host "Win32_PageFileSetting query failed: $($_.Exception.Message)"
+    }
+
+    try {
+        $cs = Get-CimInstance -ClassName Win32_ComputerSystem -ErrorAction Stop
+        if ($cs.AutomaticManagedPagefile) {
+            Write-Host 'AutomaticManagedPagefile: ENABLED (size managed by Windows; may not appear in Win32_PageFileSetting).'
+        }
+        else {
+            Write-Host 'AutomaticManagedPagefile: disabled.'
+        }
+    }
+    catch {
+        Write-Host "Win32_ComputerSystem query failed: $($_.Exception.Message)"
+    }
+
+    try {
+        $fi = [System.IO.FileInfo]::new($LiteralPath)
+        if ($fi.Exists) {
+            $sizeBytes = $fi.Length
+            $sizeGB = [Math]::Round($sizeBytes / 1GB, 4)
+            Write-Host "On-disk file: $LiteralPath"
+            Write-Host "  Size: $sizeGB GB ($sizeBytes bytes)"
+            $reported = $true
+        }
+    }
+    catch {
+        # On-disk size is best-effort: pagefile.sys is held with an exclusive
+        # handle and FileInfo.Length may throw under tight ACLs even when the
+        # file exists. CIM data above is authoritative.
+        Write-Verbose "FileInfo probe failed: $($_.Exception.Message)"
+    }
+
+    if (-not $reported) {
+        Write-Host "No active or configured pagefile found at: $LiteralPath"
+        Write-Host 'Note: pagefile.sys is a locked OS file. If you expect it to exist,'
+        Write-Host 'rerun this script from an elevated (Administrator) PowerShell.'
+    }
 }
 
 function Invoke-Main {
