@@ -38,13 +38,12 @@ function Invoke-AttribDehydrate {
         [string]$FilePath
     )
 
-    $attrib = Join-Path $env:SystemRoot 'System32\attrib.exe'
-    if (-not (Test-Path -LiteralPath $attrib)) {
-        throw "attrib.exe not found at $attrib"
-    }
-
-    $p = Start-Process -FilePath $attrib -ArgumentList @('+U', '-P', $FilePath) -Wait -NoNewWindow -PassThru
-    return $p.ExitCode
+    # Call attrib.exe directly so PowerShell native-command quoting handles paths
+    # with spaces, commas, brackets, and other characters. Start-Process
+    # -ArgumentList does not quote arguments and produced
+    # "Parameter format not correct" errors on real OneDrive paths.
+    $null = & attrib.exe +U -P $FilePath 2>&1
+    return $LASTEXITCODE
 }
 
 function Invoke-Main {
