@@ -50,15 +50,14 @@ function Invoke-RobocopyMirrorEmpty {
         throw "robocopy.exe not found at $robocopy"
     }
 
-    $proc = Start-Process -FilePath $robocopy -ArgumentList @(
-        $EmptySource,
-        $TargetPath,
-        '/MIR',
-        '/R:1',
-        '/W:1'
-    ) -Wait -NoNewWindow -PassThru
+    # Trim trailing backslashes — robocopy mis-parses quoted paths ending in '\'
+    # (e.g. "C:\foo\" becomes C:\foo" to its argv parser).
+    $src = $EmptySource.TrimEnd('\')
+    $dst = $TargetPath.TrimEnd('\')
 
-    return $proc.ExitCode
+    $robocopyArgs = @($src, $dst, '/MIR', '/R:1', '/W:1')
+    & $robocopy @robocopyArgs
+    return $LASTEXITCODE
 }
 
 function Test-RobocopySuccess {
