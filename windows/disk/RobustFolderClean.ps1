@@ -56,7 +56,10 @@ function Invoke-RobocopyMirrorEmpty {
     $dst = $TargetPath.TrimEnd('\')
 
     $robocopyArgs = @($src, $dst, '/MIR', '/R:1', '/W:1')
-    & $robocopy @robocopyArgs
+    # Pipe to Out-Host so robocopy's banner/progress reaches the operator
+    # but is not collected into the function's return value (which would
+    # otherwise be an Object[] of [stdout lines + exit code]).
+    & $robocopy @robocopyArgs | Out-Host
     return $LASTEXITCODE
 }
 
