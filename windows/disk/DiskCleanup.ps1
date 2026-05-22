@@ -85,6 +85,39 @@ function Invoke-DismWithExitCheck {
     }
 }
 
+function Remove-RecycleBinItem {
+    param(
+        [Parameter(Mandatory)]
+        [System.IO.FileSystemInfo]$Item,
+        [Parameter(Mandatory)]
+        [string]$EmptyDir
+    )
+
+    if (-not $Item.PSIsContainer) {
+        Remove-Item -LiteralPath $Item.FullName -Force -ErrorAction SilentlyContinue
+        return
+    }
+
+    # Directories may contain paths that exceed MAX_PATH, causing Remove-Item
+    # -Recurse to hang. Mirror an empty directory into the target first to wipe
+    # its contents via robocopy (which handles long paths natively), then remove
+    # the resulting empty directory. The SID folder itself is never touched here.
+    if (-not (Test-Path -LiteralPath $EmptyDir)) {
+        New-Item -ItemType Directory -Path $EmptyDir -Force | Out-Null
+    }
+
+    $proc = Start-Process -FilePath 'robocopy.exe' `
+        -ArgumentList @($EmptyDir, $Item.FullName, '/MIR', '/R:1', '/W:0', '/NFL', '/NDL', '/NJH', '/NJS') `
+        -Wait -NoNewWindow -PassThru
+
+    if ($proc.ExitCode -le 7) {
+        Remove-Item -LiteralPath $Item.FullName -Force -ErrorAction SilentlyContinue
+    }
+    else {
+        Write-Warning "  robocopy /MIR failed (exit $($proc.ExitCode)) for $($Item.FullName)"
+    }
+}
+
 function Clear-AllRecycleBin {
     Write-Output 'Cleaning: Recycle Bin (all users, C drive)'
 
@@ -94,6 +127,7 @@ function Clear-AllRecycleBin {
         return
     }
 
+    $emptyDir = 'C:\empty'
     $sidFolders = Get-ChildItem -LiteralPath $binRoot -Force -Directory -ErrorAction SilentlyContinue |
         Where-Object { $_.Name -like 'S-1-5-*' }
 
@@ -105,7 +139,7 @@ function Clear-AllRecycleBin {
             $count = ($items | Measure-Object).Count
             if ($count -gt 0) {
                 foreach ($item in $items) {
-                    Remove-Item -LiteralPath $item.FullName -Recurse -Force -ErrorAction SilentlyContinue
+                    Remove-RecycleBinItem -Item $item -EmptyDir $emptyDir
                 }
                 $touched = $true
                 Write-Output "  Removed $count item(s) under $($sidFolder.FullName)"
@@ -114,6 +148,10 @@ function Clear-AllRecycleBin {
         catch {
             Write-Warning "Could not clear $($sidFolder.FullName) — $($_.Exception.Message)"
         }
+    }
+
+    if (Test-Path -LiteralPath $emptyDir) {
+        Remove-Item -LiteralPath $emptyDir -Force -ErrorAction SilentlyContinue
     }
 
     if (-not $touched) {
