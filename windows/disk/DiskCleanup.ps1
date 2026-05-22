@@ -86,42 +86,33 @@ function Invoke-DismWithExitCheck {
 }
 
 function Clear-AllRecycleBin {
-    Write-Output 'Cleaning: Recycle Bin (all users, all fixed drives)'
+    Write-Output 'Cleaning: Recycle Bin (all users, C drive)'
 
-    try {
-        $driveRoots = Get-CimInstance -ClassName Win32_LogicalDisk -Filter 'DriveType=3' -ErrorAction Stop |
-            ForEach-Object { "$($_.DeviceID)\" }
+    $binRoot = 'C:\$Recycle.Bin'
+    if (-not (Test-Path -LiteralPath $binRoot)) {
+        Write-Output '  Recycle Bin path not found on C:.'
+        return
     }
-    catch {
-        $driveRoots = Get-PSDrive -PSProvider FileSystem -ErrorAction SilentlyContinue |
-            Where-Object { $_.Root -match '^[A-Za-z]:\\$' } |
-            ForEach-Object { $_.Root }
-    }
+
+    $sidFolders = Get-ChildItem -LiteralPath $binRoot -Force -Directory -ErrorAction SilentlyContinue |
+        Where-Object { $_.Name -like 'S-1-5-*' }
 
     $touched = $false
-    foreach ($root in $driveRoots) {
-        $binRoot = Join-Path $root '$Recycle.Bin'
-        if (-not (Test-Path -LiteralPath $binRoot)) { continue }
-
-        $sidFolders = Get-ChildItem -LiteralPath $binRoot -Force -Directory -ErrorAction SilentlyContinue |
-            Where-Object { $_.Name -like 'S-1-5-*' }
-
-        foreach ($sidFolder in $sidFolders) {
-            try {
-                $items = Get-ChildItem -LiteralPath $sidFolder.FullName -Force -ErrorAction SilentlyContinue |
-                    Where-Object { $_.Name -ne 'desktop.ini' }
-                $count = ($items | Measure-Object).Count
-                if ($count -gt 0) {
-                    foreach ($item in $items) {
-                        Remove-Item -LiteralPath $item.FullName -Recurse -Force -ErrorAction SilentlyContinue
-                    }
-                    $touched = $true
-                    Write-Output "  Removed $count item(s) under $($sidFolder.FullName)"
+    foreach ($sidFolder in $sidFolders) {
+        try {
+            $items = Get-ChildItem -LiteralPath $sidFolder.FullName -Force -ErrorAction SilentlyContinue |
+                Where-Object { $_.Name -ne 'desktop.ini' }
+            $count = ($items | Measure-Object).Count
+            if ($count -gt 0) {
+                foreach ($item in $items) {
+                    Remove-Item -LiteralPath $item.FullName -Recurse -Force -ErrorAction SilentlyContinue
                 }
+                $touched = $true
+                Write-Output "  Removed $count item(s) under $($sidFolder.FullName)"
             }
-            catch {
-                Write-Warning "Could not clear $($sidFolder.FullName) — $($_.Exception.Message)"
-            }
+        }
+        catch {
+            Write-Warning "Could not clear $($sidFolder.FullName) — $($_.Exception.Message)"
         }
     }
 
