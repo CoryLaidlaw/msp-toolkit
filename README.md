@@ -9,6 +9,7 @@ Collection of PowerShell used by technicians at an MSP: troubleshooting, cleanup
 | [windows/onboarding](windows/onboarding) | AD user create/copy helpers (see area readme for the CSV). |
 | [windows/software-removal](windows/software-removal) | Third-party software removal (uninstall, services, leftovers). |
 | [windows/network](windows/network) | Network discovery plus current-user drive/printer mapping management. |
+| [windows/monitoring](windows/monitoring) | Read-only runtime health checks and event-driven diagnostics (crash loops, etc.). |
 | [data/templates](data/templates) | Sample data files, such as CSV templates (not customer data). |
 | [m365](m365) | Microsoft 365 scripts (Graph, SharePoint; see folder readme). |
 
