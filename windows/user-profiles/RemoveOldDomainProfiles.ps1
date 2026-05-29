@@ -56,9 +56,9 @@ function Get-DomainProfiles {
     Get-ItemProperty -Path 'HKLM:\SOFTWARE\Microsoft\Windows NT\CurrentVersion\ProfileList\*' |
         Where-Object { $_.PSChildName.Length -gt 20 } |
         ForEach-Object {
-            $high = $_.LocalProfileLoadTimeHigh
-            $low = $_.LocalProfileLoadTimeLow
-            $time = [datetime]::FromFileTime(([long]$high -shl 32) -bor [long]$low)
+            $high = if ($null -ne $_.PSObject.Properties['LocalProfileLoadTimeHigh']) { $_.LocalProfileLoadTimeHigh } else { 0 }
+            $low  = if ($null -ne $_.PSObject.Properties['LocalProfileLoadTimeLow'])  { $_.LocalProfileLoadTimeLow  } else { 0 }
+            $time = [datetime]::FromFileTime(([long]$high -shl 32) -bor ([long]$low -band [long]0xFFFFFFFF))
             [pscustomobject]@{
                 SID = $_.PSChildName
                 ProfilePath = $_.ProfileImagePath
