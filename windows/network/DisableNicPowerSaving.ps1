@@ -3,7 +3,8 @@
     Disables all NIC power-management settings that can drop connectivity while the machine is powered on.
 .DESCRIPTION
     Enumerates Ethernet (802.3) and Wi-Fi (Native 802.11) adapters via Get-NetAdapter, skipping
-    Bluetooth, cellular (WirelessWan), VPN tunnels, and other virtual adapters. For each qualifying
+    Bluetooth, cellular (WirelessWan), VPN tunnels, VMware/VirtualBox virtual adapters, and other
+    non-physical adapters. For each qualifying
     adapter: sets PnPCapabilities in the Device Manager registry to prevent Windows from powering off
     the adapter, and disables common vendor power-saving advanced properties (EEE variants, selective
     suspend, wake offloads, ULP mode, etc.). Requires elevated administrator or LocalSystem context.
@@ -20,6 +21,9 @@ $script:NicClassGuid = '{4D36E972-E325-11CE-BFC1-08002bE10318}'
 
 # Only these PhysicalMediaType values are processed; all others (Bluetooth, WirelessWan, Unspecified) are skipped.
 $script:TargetMediaTypes = @("802.3", "Native 802.11")
+
+# Adapters whose InterfaceDescription contains any of these strings are skipped regardless of media type.
+$script:ExcludeDescriptionPatterns = @("VMware", "VirtualBox")
 
 # PnPCapabilities 0x10 = disable OS power-off, 0x08 = disable wake; combined = 24 (0x18)
 $script:PnpNoShutdownValue = 24
@@ -122,7 +126,11 @@ function Disable-PowerSavingProperty {
 
 function Invoke-Main {
     $adapters = @(Get-NetAdapter -ErrorAction Stop | Where-Object {
-        $script:TargetMediaTypes -contains $_.PhysicalMediaType
+        $a = $_
+        $mediaOk      = $script:TargetMediaTypes -contains $a.PhysicalMediaType
+        $notExcluded  = -not ($script:ExcludeDescriptionPatterns |
+                            Where-Object { $a.InterfaceDescription -like "*$_*" })
+        $mediaOk -and $notExcluded
     })
 
     if ($adapters.Count -eq 0) {
@@ -130,7 +138,7 @@ function Invoke-Main {
         return
     }
 
-    Write-Host 'Ethernet and Wi-Fi adapters found (Bluetooth, cellular, and VPN adapters skipped):' -ForegroundColor Cyan
+    Write-Host 'Ethernet and Wi-Fi adapters found (Bluetooth, cellular, VPN, and VMware/VirtualBox adapters skipped):' -ForegroundColor Cyan
     foreach ($a in $adapters) {
         Write-Host "  $($a.Name)  -  $($a.InterfaceDescription)" -ForegroundColor Cyan
     }

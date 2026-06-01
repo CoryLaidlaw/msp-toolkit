@@ -154,7 +154,7 @@ Template starters are available under `data/templates`:
 1. **PnPCapabilities registry flag** (`HKLM:\SYSTEM\CurrentControlSet\Control\Class\{4D36E972...}\<subkey>`) set to `24` (0x18) — prevents Windows from powering off the adapter (Device Manager "Allow the computer to turn off this device to save power") and disables the wake capability flag.
 2. **NIC advanced properties** — disables EEE variants (`*EEE`, `AdvancedEEE`, `EEE`, `EeeLinkAdvertisement`, `EeePhyEnable`, `GigabitEcoEEEEnabled`), wake offloads (`*WakeOnMagicPacket`, `*WakeOnPattern`, `*PMARPOffload`, `*PMNSOffload`), USB selective suspend (`*SelectiveSuspend`), and vendor power-saving modes (`PowerSavingMode`, `AutoPowerSavingMode`, `ULPMode`, `S5WakeOnLan`). Only properties that exist on the adapter are processed; unsupported keywords are silently skipped.
 
-Adapters are filtered to `PhysicalMediaType` values `802.3` (Ethernet) and `Native 802.11` (Wi-Fi) before any processing. Bluetooth (`Bluetooth`), cellular (`WirelessWan`), VPN/tunnel adapters such as FortiClient (`Unspecified`), Hyper-V virtual switches, and loopback adapters are all excluded at the filter step.
+Adapters are filtered to `PhysicalMediaType` values `802.3` (Ethernet) and `Native 802.11` (Wi-Fi) before any processing, and then a secondary description-pattern check excludes adapters whose `InterfaceDescription` contains `VMware` or `VirtualBox`. Bluetooth (`Bluetooth`), cellular (`WirelessWan`), VPN/tunnel adapters such as FortiClient (`Unspecified`), VMware virtual adapters (VMnet1, VMnet8), VirtualBox host adapters, Hyper-V virtual switches, and loopback adapters are all excluded. To add more exclusion patterns, extend `$script:ExcludeDescriptionPatterns` in the script.
 
 **Safety / impact:**
 
