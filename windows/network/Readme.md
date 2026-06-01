@@ -149,12 +149,12 @@ Template starters are available under `data/templates`:
 
 ## DisableNicPowerSaving.ps1
 
-**Purpose:** Enumerate all network adapters and eliminate every OS- and vendor-level power-saving setting that can drop connectivity while the machine is powered on. Two categories of changes are made per adapter:
+**Purpose:** Enumerate all **Ethernet** and **Wi-Fi** adapters and eliminate every OS- and vendor-level power-saving setting that can drop connectivity while the machine is powered on. Bluetooth, cellular (WirelessWan), VPN tunnel adapters (e.g. FortiClient), and other virtual adapters are automatically excluded by `PhysicalMediaType` and left untouched. Two categories of changes are made per qualifying adapter:
 
 1. **PnPCapabilities registry flag** (`HKLM:\SYSTEM\CurrentControlSet\Control\Class\{4D36E972...}\<subkey>`) set to `24` (0x18) — prevents Windows from powering off the adapter (Device Manager "Allow the computer to turn off this device to save power") and disables the wake capability flag.
 2. **NIC advanced properties** — disables EEE variants (`*EEE`, `AdvancedEEE`, `EEE`, `EeeLinkAdvertisement`, `EeePhyEnable`, `GigabitEcoEEEEnabled`), wake offloads (`*WakeOnMagicPacket`, `*WakeOnPattern`, `*PMARPOffload`, `*PMNSOffload`), USB selective suspend (`*SelectiveSuspend`), and vendor power-saving modes (`PowerSavingMode`, `AutoPowerSavingMode`, `ULPMode`, `S5WakeOnLan`). Only properties that exist on the adapter are processed; unsupported keywords are silently skipped.
 
-Virtual adapters (Hyper-V switches, WAN Miniport, loopback) have no Device Manager registry entry and are skipped for the PnP step; their advanced properties are also not present and are skipped.
+Adapters are filtered to `PhysicalMediaType` values `802.3` (Ethernet) and `Native 802.11` (Wi-Fi) before any processing. Bluetooth (`Bluetooth`), cellular (`WirelessWan`), VPN/tunnel adapters such as FortiClient (`Unspecified`), Hyper-V virtual switches, and loopback adapters are all excluded at the filter step.
 
 **Safety / impact:**
 

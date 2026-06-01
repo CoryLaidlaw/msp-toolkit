@@ -2,12 +2,14 @@
 .SYNOPSIS
     Disables all NIC power-management settings that can drop connectivity while the machine is powered on.
 .DESCRIPTION
-    Enumerates all network adapters via Get-NetAdapter, then for each: sets PnPCapabilities in the Device
-    Manager registry to prevent Windows from powering off the adapter, and disables common vendor
-    power-saving advanced properties (EEE variants, selective suspend, wake offloads, ULP mode, etc.).
-    Requires elevated administrator or LocalSystem context. A single confirmation prompt is shown before
-    any changes are made. Restarting the affected adapters or rebooting is recommended after the script
-    completes for PnPCapabilities changes to take full effect in Device Manager.
+    Enumerates Ethernet (802.3) and Wi-Fi (Native 802.11) adapters via Get-NetAdapter, skipping
+    Bluetooth, cellular (WirelessWan), VPN tunnels, and other virtual adapters. For each qualifying
+    adapter: sets PnPCapabilities in the Device Manager registry to prevent Windows from powering off
+    the adapter, and disables common vendor power-saving advanced properties (EEE variants, selective
+    suspend, wake offloads, ULP mode, etc.). Requires elevated administrator or LocalSystem context.
+    A single confirmation prompt is shown before any changes are made. Restarting the affected adapters
+    or rebooting is recommended after the script completes for PnPCapabilities changes to take full
+    effect in Device Manager.
 #>
 
 Set-StrictMode -Version Latest
@@ -15,6 +17,9 @@ $ErrorActionPreference = 'Stop'
 
 # GUID for the Network Adapters device class in Device Manager
 $script:NicClassGuid = '{4D36E972-E325-11CE-BFC1-08002bE10318}'
+
+# Only these PhysicalMediaType values are processed; all others (Bluetooth, WirelessWan, Unspecified) are skipped.
+$script:TargetMediaTypes = @("802.3", "Native 802.11")
 
 # PnPCapabilities 0x10 = disable OS power-off, 0x08 = disable wake; combined = 24 (0x18)
 $script:PnpNoShutdownValue = 24
@@ -116,14 +121,16 @@ function Disable-PowerSavingProperty {
 }
 
 function Invoke-Main {
-    $adapters = @(Get-NetAdapter -ErrorAction Stop)
+    $adapters = @(Get-NetAdapter -ErrorAction Stop | Where-Object {
+        $script:TargetMediaTypes -contains $_.PhysicalMediaType
+    })
 
     if ($adapters.Count -eq 0) {
-        Write-Host 'No network adapters found.' -ForegroundColor Yellow
+        Write-Host 'No Ethernet or Wi-Fi adapters found.' -ForegroundColor Yellow
         return
     }
 
-    Write-Host 'Network adapters found:' -ForegroundColor Cyan
+    Write-Host 'Ethernet and Wi-Fi adapters found (Bluetooth, cellular, and VPN adapters skipped):' -ForegroundColor Cyan
     foreach ($a in $adapters) {
         Write-Host "  $($a.Name)  -  $($a.InterfaceDescription)" -ForegroundColor Cyan
     }
@@ -134,7 +141,7 @@ function Invoke-Main {
     Write-Host '  A reboot or adapter restart is recommended after completion.' -ForegroundColor Yellow
     Write-Host ''
 
-    $confirm = Read-Host 'Apply changes to all adapters? (Y/N)'
+    $confirm = Read-Host 'Apply changes to all Ethernet and Wi-Fi adapters? (Y/N)'
     if ($confirm.Trim() -notmatch '^(?i:y|yes)$') {
         Write-Host 'Aborted by operator.' -ForegroundColor Yellow
         return
