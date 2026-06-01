@@ -1,19 +1,21 @@
 # windows/network
 
-PowerShell helpers for **network discovery and user-context mapping management** (ICMP reachability, mapped drives, and printer mapping/management workflows). Intended for technician use on authorized environments.
+PowerShell helpers for **network discovery, NIC power management, and user-context mapping management** (ICMP reachability, NIC power settings, mapped drives, and printer mapping/management workflows). Intended for technician use on authorized environments.
 
 ## Folder purpose summary
 
-This folder contains technician scripts for subnet reachability scanning and current-user drive/printer mapping operations.
+This folder contains technician scripts for subnet reachability scanning, NIC power-saving remediation, and current-user drive/printer mapping operations.
 
 ## Script inventory
 
+- `DisableNicPowerSaving.ps1`
 - `SubnetPingScan.ps1`
 - `ManageCurrentUserMappings.ps1`
 - `ManageCurrentUserPrinters.ps1`
 
 ## Safety and impact notes
 
+- `DisableNicPowerSaving.ps1` modifies Device Manager registry values and NIC advanced properties; a reboot or adapter restart is recommended after running.
 - Subnet scanning is active probing and must be run only on authorized network ranges.
 - Mapping scripts can add/remove user drive and printer mappings and should be run with explicit operator confirmation.
 
@@ -144,3 +146,34 @@ Template starters are available under `data/templates`:
 - Delete and interactive rename require explicit confirmation before changes.
 
 **Usage:** `.\ManageCurrentUserPrinters.ps1` from this folder, or paste into Windows PowerShell.
+
+## DisableNicPowerSaving.ps1
+
+**Purpose:** Enumerate all network adapters and eliminate every OS- and vendor-level power-saving setting that can drop connectivity while the machine is powered on. Two categories of changes are made per adapter:
+
+1. **PnPCapabilities registry flag** (`HKLM:\SYSTEM\CurrentControlSet\Control\Class\{4D36E972...}\<subkey>`) set to `24` (0x18) — prevents Windows from powering off the adapter (Device Manager "Allow the computer to turn off this device to save power") and disables the wake capability flag.
+2. **NIC advanced properties** — disables EEE variants (`*EEE`, `AdvancedEEE`, `EEE`, `EeeLinkAdvertisement`, `EeePhyEnable`, `GigabitEcoEEEEnabled`), wake offloads (`*WakeOnMagicPacket`, `*WakeOnPattern`, `*PMARPOffload`, `*PMNSOffload`), USB selective suspend (`*SelectiveSuspend`), and vendor power-saving modes (`PowerSavingMode`, `AutoPowerSavingMode`, `ULPMode`, `S5WakeOnLan`). Only properties that exist on the adapter are processed; unsupported keywords are silently skipped.
+
+Virtual adapters (Hyper-V switches, WAN Miniport, loopback) have no Device Manager registry entry and are skipped for the PnP step; their advanced properties are also not present and are skipped.
+
+**Safety / impact:**
+
+- **Registry write:** modifies `PnPCapabilities` under `HKLM:\SYSTEM\CurrentControlSet\Control\Class\{4D36E972-E325-11CE-BFC1-08002bE10318}`. The change persists across reboots.
+- **Adapter restart required** for `PnPCapabilities` to take effect in Device Manager UI; advanced property changes apply at next driver load or reboot.
+- Script does **not** disable or restart adapters during execution; use `-NoRestart` behavior means NIC traffic is uninterrupted.
+
+**Execution context:** Must run as **LocalSystem** or **elevated Administrator** to write registry keys and NIC advanced properties.
+
+**Operator inputs (prompts only -- no script parameters):**
+
+1. **`Apply changes to all adapters? (Y/N)`** -- Single confirmation before any modifications are made.
+
+**Commands and APIs used:** `Get-NetAdapter`, `Get-ChildItem` (registry), `Get-ItemProperty`, `Set-ItemProperty`, `Get-NetAdapterAdvancedProperty`, `Set-NetAdapterAdvancedProperty`.
+
+**Validation:**
+
+- Each adapter prints `[PnP]` and `[Props]` lines showing what changed or was already set.
+- Final summary shows count of adapters updated and total properties disabled.
+- After reboot, verify in Device Manager (adapter Properties > Power Management) that "Allow the computer to turn off this device to save power" is unchecked and greyed out.
+
+**Usage:** `.\DisableNicPowerSaving.ps1` from this folder, or paste into an elevated Windows PowerShell session.
