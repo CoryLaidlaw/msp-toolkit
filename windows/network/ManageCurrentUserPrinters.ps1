@@ -638,6 +638,7 @@ function Invoke-Main {
     while ($true) {
         $mappedPrinters = @(Get-PrinterConnectionsForSid -Sid $targetContext.Sid)
         Show-MappedPrinterConnections -Printers $mappedPrinters
+        Show-InstalledPrinters
 
         Write-Host ''
         Write-Host 'Actions:' -ForegroundColor Yellow
