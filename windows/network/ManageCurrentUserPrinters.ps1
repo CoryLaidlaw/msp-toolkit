@@ -130,7 +130,7 @@ function Show-MappedPrinterConnections {
     )
 
     Write-Host ''
-    Write-Host 'Mapped printer connections:' -ForegroundColor Yellow
+    Write-Host 'Mapped printer connections (Add/Delete registry):' -ForegroundColor Yellow
     if ($Printers.Count -eq 0) {
         Write-Host '  (none found for current user)' -ForegroundColor DarkYellow
         return
@@ -138,6 +138,21 @@ function Show-MappedPrinterConnections {
 
     for ($i = 0; $i -lt $Printers.Count; $i++) {
         Write-Host ("[{0}] {1}" -f ($i + 1), $Printers[$i].PrinterName)
+    }
+}
+
+function Show-InstalledPrinters {
+    $printers = @(Get-Printer -ErrorAction SilentlyContinue | Sort-Object -Property Name)
+
+    Write-Host ''
+    Write-Host 'Installed printers (Rename/Delete spooler):' -ForegroundColor Yellow
+    if ($printers.Count -eq 0) {
+        Write-Host '  (none found)' -ForegroundColor DarkYellow
+        return
+    }
+
+    for ($i = 0; $i -lt $printers.Count; $i++) {
+        Write-Host ("[{0}] {1}" -f ($i + 1), $printers[$i].Name)
     }
 }
 
