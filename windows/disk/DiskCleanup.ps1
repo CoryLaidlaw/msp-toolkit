@@ -159,6 +159,62 @@ function Clear-AllRecycleBin {
     }
 }
 
+function Get-CleanableUserProfile {
+    # Win32_UserProfile.Special covers LocalSystem, LocalService, NetworkService,
+    # IIS AppPool accounts, and other service/virtual accounts.
+    # Loaded = $true means the profile hive is mounted (user is logged on).
+    # UNC LocalPath means a roaming/redirected profile on a network share — skip.
+    Get-CimInstance -ClassName Win32_UserProfile -ErrorAction SilentlyContinue |
+        Where-Object {
+            -not $_.Special -and
+            -not $_.Loaded -and
+            -not [string]::IsNullOrWhiteSpace($_.LocalPath) -and
+            $_.LocalPath -notlike '\\*' -and
+            (Test-Path -LiteralPath $_.LocalPath)
+        }
+}
+
+function Clear-UserProfileCache {
+    param(
+        [Parameter(Mandatory)]
+        [string]$ProfilePath,
+        [Parameter(Mandatory)]
+        [string]$Username
+    )
+
+    Remove-FilesSafely -Path (Join-Path $ProfilePath 'AppData\Local\Temp') `
+        -Description "User Temp ($Username)"
+
+    Remove-FilesSafely -Path (Join-Path $ProfilePath 'AppData\Local\Microsoft\Windows\Explorer') `
+        -Description "Thumbnail cache ($Username)"
+
+    foreach ($browser in @(
+        @{ Name = 'Edge';   Base = 'AppData\Local\Microsoft\Edge\User Data' },
+        @{ Name = 'Chrome'; Base = 'AppData\Local\Google\Chrome\User Data' }
+    )) {
+        $browserBase = Join-Path $ProfilePath $browser.Base
+        if (Test-Path -LiteralPath $browserBase) {
+            Get-ChildItem -LiteralPath $browserBase -Directory -ErrorAction SilentlyContinue |
+                Where-Object { $_.Name -eq 'Default' -or $_.Name -like 'Profile *' } |
+                ForEach-Object {
+                    Remove-FilesSafely -Path (Join-Path $_.FullName 'Cache') `
+                        -Description "$($browser.Name) cache ($Username - $($_.Name))"
+                    Remove-FilesSafely -Path (Join-Path $_.FullName 'Code Cache') `
+                        -Description "$($browser.Name) code cache ($Username - $($_.Name))"
+                }
+        }
+    }
+
+    $ffProfilesRoot = Join-Path $ProfilePath 'AppData\Local\Mozilla\Firefox\Profiles'
+    if (Test-Path -LiteralPath $ffProfilesRoot) {
+        Get-ChildItem -LiteralPath $ffProfilesRoot -Directory -ErrorAction SilentlyContinue |
+            ForEach-Object {
+                Remove-FilesSafely -Path (Join-Path $_.FullName 'cache2') `
+                    -Description "Firefox cache ($Username - $($_.Name))"
+            }
+    }
+}
+
 function Invoke-CleanMgrSageRun {
     $volumeCachesPath = 'HKLM:\SOFTWARE\Microsoft\Windows\CurrentVersion\Explorer\VolumeCaches'
     if (-not (Test-Path -LiteralPath $volumeCachesPath)) {
@@ -259,7 +315,18 @@ function Invoke-Main {
         }
     }
     else {
-        Write-Output 'Skipping current-user profile caches (running as LocalSystem).'
+        Write-Output 'Cleaning profile caches for logged-off users (running as LocalSystem)...'
+        $cleanableProfiles = Get-CleanableUserProfile
+        if (($cleanableProfiles | Measure-Object).Count -eq 0) {
+            Write-Output '  No cleanable profiles found (all users logged on, or no local user profiles present).'
+        }
+        else {
+            foreach ($userProfile in $cleanableProfiles) {
+                $username = Split-Path $userProfile.LocalPath -Leaf
+                Write-Output "  Cleaning profile: $username"
+                Clear-UserProfileCache -ProfilePath $userProfile.LocalPath -Username $username
+            }
+        }
     }
 
     if ($isAdmin) {
