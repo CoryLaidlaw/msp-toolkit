@@ -1,10 +1,6 @@
 # windows/software-removal
 
-PowerShell helpers for **removing third-party Windows software** end-to-end (services, autostart, uninstaller invocation, filesystem and registry cleanup). Scripts are product-specific; add new removal flows here when they do not fit an existing `windows/` domain folder.
-
-## Folder purpose summary
-
-This folder contains targeted software-removal scripts for technician-led endpoint remediation workflows.
+Scripts for **removing third-party Windows software** end-to-end (services, autostart, uninstaller invocation, filesystem and registry cleanup). Each script targets one product; add new removal flows here when they do not fit an existing `windows/` domain folder.
 
 ## Script inventory
 
@@ -13,7 +9,7 @@ This folder contains targeted software-removal scripts for technician-led endpoi
 ## Safety and impact notes
 
 - Removal flows in this folder are destructive and can interrupt active support tooling.
-- Run only with approved change context and validate operator privileges before execution.
+- Make sure the removal is approved and you are running elevated (or as SYSTEM) before you start.
 
 ## Validation guidance
 
@@ -33,9 +29,9 @@ This folder contains targeted software-removal scripts for technician-led endpoi
 
 **Execution context:** **Elevated Administrator** or **LocalSystem** required. The script checks this before the confirmation prompt and stops if neither applies.
 
-**Operator inputs (prompts only — no parameters):**
+**Operator inputs:** one prompt, no parameters.
 
-1. **`Continue with BeyondTrust / Bomgar removal? (Y/N)`** — Must be **Y** or **yes** (case-insensitive) to proceed; anything else aborts.
+1. **`Continue with BeyondTrust / Bomgar removal? (Y/N)`**: answer **Y** or **yes** (case-insensitive) to proceed; anything else aborts.
 
 **What it does (summary):**
 

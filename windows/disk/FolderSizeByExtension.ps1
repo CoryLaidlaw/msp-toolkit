@@ -4,7 +4,7 @@
 .DESCRIPTION
     Prompts for a root folder path (default C:\Users), recursively enumerates files only, groups
     by extension, and prints count and total size per type sorted largest-first. No deletions.
-    Heavy disk I/O on large trees — prefer maintenance windows or narrow paths.
+    Heavy disk I/O on large trees, so prefer maintenance windows or narrow paths.
 #>
 
 Set-StrictMode -Version Latest

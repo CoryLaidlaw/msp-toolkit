@@ -1,3 +1,14 @@
+<#
+.SYNOPSIS
+    Creates or copies AD users in bulk from a CSV file.
+.DESCRIPTION
+    Prompts for the CSV path, then processes each row: Action N creates a new user in the row's OU,
+    Action C copies the OU, group memberships, and any unset fields from SourceSam. Rows with missing
+    data, existing names, or weak passwords are skipped with a warning. The CSV holds plaintext
+    temporary passwords, so handle it carefully and delete it when you are done. Requires the
+    ActiveDirectory RSAT module and a domain admin context.
+#>
+
 # Requires: ActiveDirectory module
 
 Import-Module ActiveDirectory

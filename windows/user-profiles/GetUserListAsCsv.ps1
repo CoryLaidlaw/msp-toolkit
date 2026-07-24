@@ -2,9 +2,9 @@
 .SYNOPSIS
     Exports local domain profile inventory and unresolved profiles to CSV.
 .DESCRIPTION
-    Prompts for domain short name, enumerates local non-special user profiles, resolves SID-to-account
-    mappings, and writes matched and unresolved results to C:\Temp CSV files. Designed for one-paste
-    execution with concise success/error outcomes.
+    Prompts for the domain short name, enumerates local non-special user profiles, resolves SID-to-account
+    mappings, and writes matched and unresolved results to CSV files under C:\Temp. It asks for anything
+    it needs at the prompt and prints a clear success or error message when it finishes.
 #>
 
 Set-StrictMode -Version Latest

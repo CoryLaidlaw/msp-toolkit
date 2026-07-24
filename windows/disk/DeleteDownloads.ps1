@@ -4,7 +4,7 @@
 .DESCRIPTION
     Prompts for confirmation, then deletes all items inside each profile's Downloads folder.
     Intended for elevated Administrator context so all profiles can be reached.
-    No script parameters — operator input via Read-Host only.
+    It prompts for everything it needs, so there are no parameters to pass.
 #>
 
 Set-StrictMode -Version Latest
@@ -71,7 +71,7 @@ function Invoke-Main {
             $cleared++
         }
         catch {
-            Write-Warning "Failed to clear: $downloadsPath — $($_.Exception.Message)"
+            Write-Warning "Failed to clear: $downloadsPath - $($_.Exception.Message)"
             $failed++
         }
     }

@@ -1,10 +1,6 @@
 # windows/onboarding
 
-PowerShell helpers for Active Directory onboarding and user attribute updates.
-
-## Folder purpose summary
-
-This folder contains technician scripts to create new AD users, copy users from existing accounts, and apply bulk attribute updates from CSV.
+Scripts for Active Directory onboarding: create new AD users, copy users from existing accounts, and apply bulk attribute updates from CSV.
 
 ## Script inventory
 
@@ -16,7 +12,8 @@ This folder contains technician scripts to create new AD users, copy users from 
 
 - These scripts can create or modify AD users and group memberships.
 - Run with appropriate AD permissions in authorized environments only.
-- Validate input data before execution, especially CSV identity columns, manager values, and OU targets.
+- Check the CSV before you run anything, especially identity columns, manager values, and OU targets.
+- CSVs for `NewUserOrCopyFromCsv.ps1` hold plaintext temporary passwords, so keep them under `C:\Temp` and delete them once the run is verified.
 
 ## Validation guidance
 
@@ -49,7 +46,7 @@ This folder contains technician scripts to create new AD users, copy users from 
 - Assumptions: `ActiveDirectory` module is available; operator has rights to create users and group memberships; CSV data is prevalidated for intended users.
 - File path behavior: Reads operator-supplied CSV path; no required output file generation.
 - Key commands/functions used: `Import-Module ActiveDirectory`, `Import-Csv`, `Get-ADUser`, `Get-ADOrganizationalUnit`, `New-ADUser`, `Add-ADPrincipalGroupMembership`, `Read-Host`.
-- Potential impact: Creates multiple AD users and may copy source-user group memberships; invalid rows are skipped with warnings.
+- Potential impact: Creates multiple AD users and may copy source-user group memberships; invalid rows are skipped with warnings. The CSV carries plaintext temporary passwords, so handle and delete it carefully.
 - Validation signals: Per-row `Write-Host` success messages for created users and warnings for skipped rows (missing source user, duplicate identities, invalid OU/manager, weak password, invalid action).
 
 ## UpdateAdUserFromCsv.ps1

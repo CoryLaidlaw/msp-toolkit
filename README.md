@@ -17,7 +17,16 @@ Many jobs are run as **LocalSystem** in remote or RMM sessions. Read each areaâ€
 
 ## Documentation
 
-Documentation expectations for both human contributors and AI agents are defined in [docs/DOC_STANDARDS.md](docs/DOC_STANDARDS.md). Folder naming and layout governance is defined in [docs/FOLDER_STRUCTURE.md](docs/FOLDER_STRUCTURE.md). PowerShell script authoring/runtime rules are defined in [docs/POWERSHELL_SCRIPT_STANDARDS.md](docs/POWERSHELL_SCRIPT_STANDARDS.md). Script review gates are defined in [docs/SCRIPT_REVIEW_CHECKLIST.md](docs/SCRIPT_REVIEW_CHECKLIST.md). Script template guidance is defined in [docs/SCRIPT_TEMPLATE.md](docs/SCRIPT_TEMPLATE.md). Folder readme requirements are defined in [docs/README_EXPECTATIONS.md](docs/README_EXPECTATIONS.md). Temporary deviation handling is defined in [docs/EXCEPTIONS_POLICY.md](docs/EXCEPTIONS_POLICY.md). Change tracking rules are defined in [docs/CHANGELOG_POLICY.md](docs/CHANGELOG_POLICY.md).
+The rules for contributing (human or AI) live under `docs/`:
+
+- [docs/DOC_STANDARDS.md](docs/DOC_STANDARDS.md): documentation expectations
+- [docs/FOLDER_STRUCTURE.md](docs/FOLDER_STRUCTURE.md): folder naming and layout
+- [docs/POWERSHELL_SCRIPT_STANDARDS.md](docs/POWERSHELL_SCRIPT_STANDARDS.md): script authoring/runtime rules
+- [docs/SCRIPT_REVIEW_CHECKLIST.md](docs/SCRIPT_REVIEW_CHECKLIST.md): review gates
+- [docs/SCRIPT_TEMPLATE.md](docs/SCRIPT_TEMPLATE.md): script template
+- [docs/README_EXPECTATIONS.md](docs/README_EXPECTATIONS.md): folder readme requirements
+- [docs/EXCEPTIONS_POLICY.md](docs/EXCEPTIONS_POLICY.md): approved deviations
+- [docs/CHANGELOG_POLICY.md](docs/CHANGELOG_POLICY.md): change tracking
 
 ## License
 

@@ -5,7 +5,7 @@
     Requires Microsoft.Graph PowerShell SDK (see m365/README.md and docs/EXCEPTIONS_POLICY.md M365-GRAPH-MGSDK-001).
     Prompts for CSV path (must be under C:\Temp), optional comma-separated Graph scopes, then Connect-MgGraph (browser
     sign-in). Enumerates groups with Get-MgGroup, then Get-MgGroupMember per group (direct membership only). Creates
-    C:\Temp if missing. Operator input is prompt-only (no script parameters).
+    C:\Temp if missing. Runs entirely from prompts, so there is nothing to pass on the command line.
 #>
 
 Set-StrictMode -Version Latest

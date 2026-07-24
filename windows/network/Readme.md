@@ -1,10 +1,6 @@
 # windows/network
 
-PowerShell helpers for **network discovery, NIC power management, and user-context mapping management** (ICMP reachability, NIC power settings, mapped drives, and printer mapping/management workflows). Intended for technician use on authorized environments.
-
-## Folder purpose summary
-
-This folder contains technician scripts for subnet reachability scanning, NIC power-saving remediation, and current-user drive/printer mapping operations.
+Scripts for **network discovery, NIC power management, and user-context mapping management**: subnet ping sweeps, NIC power-saving remediation, and current-user drive/printer mapping work. Only run scans and changes on networks and machines you are authorized to touch.
 
 ## Script inventory
 
@@ -36,12 +32,12 @@ This folder contains technician scripts for subnet reachability scanning, NIC po
 
 **Execution context:** **Windows PowerShell** on Windows 10/11. Works under many accounts; **ICMP and DNS behavior can differ** for **LocalSystem** vs interactive admin (firewall, profile, DNS suffix).
 
-**Operator inputs (prompts only — no script parameters):**
+**Operator inputs** (prompted at run time, no parameters):
 
-1. **First three IPv4 octets** — Example: `10.20.30` for `10.20.30.1`–`10.20.30.254`. Press **Enter** for default **`192.168.1`**.
-2. **`Continue with ping sweep? (Y/N)`** — Starts the sweep.
-3. **`Export results to CSV under C:\Temp? (Y/N)`** — Only if at least one host responded.
-4. **`CSV path [default: C:\Temp\NetworkScan_yyyyMMdd_HHmmss.csv]`** — Must resolve under **`C:\Temp`** if overridden.
+1. **First three IPv4 octets**: for example `10.20.30` for `10.20.30.1`–`10.20.30.254`. Press **Enter** for default **`192.168.1`**.
+2. **`Continue with ping sweep? (Y/N)`**: starts the sweep.
+3. **`Export results to CSV under C:\Temp? (Y/N)`**: asked only if at least one host responded.
+4. **`CSV path [default: C:\Temp\NetworkScan_yyyyMMdd_HHmmss.csv]`**: must resolve under **`C:\Temp`** if overridden.
 
 **Commands and APIs used:** `Read-Host`, `Test-Connection`, `[System.Net.Dns]::GetHostEntry`, `Sort-Object`, `Format-Table`, `Export-Csv`, `New-Item` (ensure `C:\Temp`).
 
@@ -65,9 +61,9 @@ This folder contains technician scripts for subnet reachability scanning, NIC po
 
 **Execution context:** Elevated technician/admin session is recommended for reliable context resolution and mapping visibility.
 
-**Operator inputs (prompts only — no script parameters):**
+**Operator inputs** (prompted at run time, no parameters):
 
-1. **Action menu** — `1) Add mapped drive  2) Remove mapped drive  3) Refresh view  4) Exit`.
+1. **Action menu**: `1) Add mapped drive  2) Remove mapped drive  3) Refresh view  4) Exit`.
 2. **Add mapped drive**:
    - Manual: prompt for drive letter and UNC path.
    - CSV: prompt for CSV path under `C:\Temp` (example: `C:\Temp\drive-add-template.csv`) with columns:
@@ -107,9 +103,9 @@ Template starters are available under `data/templates`:
 
 **Execution context:** **Elevated Administrator** or technician session recommended so all relevant hives are visible.
 
-**Operator inputs (prompts only — no script parameters):**
+**Operator inputs** (prompted at run time, no parameters):
 
-1. **Action menu** — `1) Add  2) Delete  3) Rename  4) Exit`.
+1. **Action menu**: `1) Add  2) Delete  3) Rename  4) Exit`.
 2. **Add path**:
    - Choose type: **Network mapped** or **Local/IP**.
    - Choose mode: **Manual** or **CSV**.
@@ -151,8 +147,8 @@ Template starters are available under `data/templates`:
 
 **Purpose:** Enumerate all **Ethernet** and **Wi-Fi** adapters and eliminate every OS- and vendor-level power-saving setting that can drop connectivity while the machine is powered on. Bluetooth, cellular (WirelessWan), VPN tunnel adapters (e.g. FortiClient), and other virtual adapters are automatically excluded by `PhysicalMediaType` and left untouched. Two categories of changes are made per qualifying adapter:
 
-1. **PnPCapabilities registry flag** (`HKLM:\SYSTEM\CurrentControlSet\Control\Class\{4D36E972...}\<subkey>`) set to `24` (0x18) — prevents Windows from powering off the adapter (Device Manager "Allow the computer to turn off this device to save power") and disables the wake capability flag.
-2. **NIC advanced properties** — disables EEE variants (`*EEE`, `AdvancedEEE`, `EEE`, `EeeLinkAdvertisement`, `EeePhyEnable`, `GigabitEcoEEEEnabled`), wake offloads (`*WakeOnMagicPacket`, `*WakeOnPattern`, `*PMARPOffload`, `*PMNSOffload`), USB selective suspend (`*SelectiveSuspend`), and vendor power-saving modes (`PowerSavingMode`, `AutoPowerSavingMode`, `ULPMode`, `S5WakeOnLan`). Only properties that exist on the adapter are processed; unsupported keywords are silently skipped.
+1. **PnPCapabilities registry flag** (`HKLM:\SYSTEM\CurrentControlSet\Control\Class\{4D36E972...}\<subkey>`) set to `24` (0x18), which prevents Windows from powering off the adapter (Device Manager "Allow the computer to turn off this device to save power") and disables the wake capability flag.
+2. **NIC advanced properties**: disables EEE variants (`*EEE`, `AdvancedEEE`, `EEE`, `EeeLinkAdvertisement`, `EeePhyEnable`, `GigabitEcoEEEEnabled`), wake offloads (`*WakeOnMagicPacket`, `*WakeOnPattern`, `*PMARPOffload`, `*PMNSOffload`), USB selective suspend (`*SelectiveSuspend`), and vendor power-saving modes (`PowerSavingMode`, `AutoPowerSavingMode`, `ULPMode`, `S5WakeOnLan`). Only properties that exist on the adapter are processed; unsupported keywords are silently skipped.
 
 Adapters are filtered in two stages. First, only `PhysicalMediaType` values `802.3` (Ethernet) and `Native 802.11` (Wi-Fi) are considered. Second, a description-pattern list (`$script:ExcludeDescriptionPatterns`) excludes adapters by `InterfaceDescription` substring. The built-in patterns cover: VMware, VirtualBox, Hyper-V, Docker (virtualization); Fortinet, Cisco, TAP-Windows, WireGuard, Tailscale, SonicWall, Palo Alto, GlobalProtect, Juniper, Ivanti, Barracuda, Check Point, NordVPN, ExpressVPN (VPN clients). To add more, extend `$script:ExcludeDescriptionPatterns` in the script.
 
@@ -160,13 +156,13 @@ Adapters are filtered in two stages. First, only `PhysicalMediaType` values `802
 
 - **Registry write:** modifies `PnPCapabilities` under `HKLM:\SYSTEM\CurrentControlSet\Control\Class\{4D36E972-E325-11CE-BFC1-08002bE10318}`. The change persists across reboots.
 - **Adapter restart required** for `PnPCapabilities` to take effect in Device Manager UI; advanced property changes apply at next driver load or reboot.
-- Script does **not** disable or restart adapters during execution; use `-NoRestart` behavior means NIC traffic is uninterrupted.
+- Script does **not** disable or restart adapters during execution, so NIC traffic is uninterrupted while it runs.
 
 **Execution context:** Must run as **LocalSystem** or **elevated Administrator** to write registry keys and NIC advanced properties.
 
-**Operator inputs (prompts only -- no script parameters):**
+**Operator inputs** (prompted at run time, no parameters):
 
-1. **`Apply changes to all adapters? (Y/N)`** -- Single confirmation before any modifications are made.
+1. **`Apply changes to all adapters? (Y/N)`**: single confirmation before any modifications are made.
 
 **Commands and APIs used:** `Get-NetAdapter`, `Get-ChildItem` (registry), `Get-ItemProperty`, `Set-ItemProperty`, `Get-NetAdapterAdvancedProperty`, `Set-NetAdapterAdvancedProperty`.
 

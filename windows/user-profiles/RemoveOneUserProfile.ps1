@@ -3,8 +3,8 @@
     Removes one local user profile selected by prompt input.
 .DESCRIPTION
     Prompts for username and profile path, validates that the path is under C:\Users, then
-    deletes the matching Win32_UserProfile entry. Emits deterministic success/not-found/error
-    outcomes and prints C: free-space status at completion.
+    deletes the matching Win32_UserProfile entry. Prints a clear success, not-found, or error
+    result so you know what happened, then shows C: free space when it finishes.
 #>
 
 Set-StrictMode -Version Latest

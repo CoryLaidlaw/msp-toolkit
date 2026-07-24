@@ -49,7 +49,7 @@ function Invoke-Main {
     } -ErrorAction SilentlyContinue)
 
     if ($crashEvents.Count -eq 0) {
-        Write-Host "OK — No application crashes detected in the last $windowMinutes minutes." -ForegroundColor Green
+        Write-Host "OK - No application crashes detected in the last $windowMinutes minutes." -ForegroundColor Green
         return
     }
 
@@ -72,7 +72,7 @@ function Invoke-Main {
 
         if ($count -lt $threshold) {
             $warnCount++
-            Write-Host "WARN — $appName : $count crash(es) in the last $windowMinutes minutes (threshold: $threshold)." -ForegroundColor Yellow
+            Write-Host "WARN - $appName : $count crash(es) in the last $windowMinutes minutes (threshold: $threshold)." -ForegroundColor Yellow
         } else {
             $loopCount++
             $oldest   = ($appCrashes | Select-Object -First 1).TimeCreated

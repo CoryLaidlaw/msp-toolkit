@@ -3,8 +3,9 @@
     Pings each address in a /24 IPv4 range and lists responding hosts with optional reverse DNS names.
 .DESCRIPTION
     Prompts for the first three octets (e.g. 192.168.1), then optionally exports results to CSV under C:\Temp. Uses
-    Test-Connection (ICMP) and System.Net.Dns for hostnames. Read-only from a data perspective but still network
-    active probing—use only on networks you are authorized to scan. No script parameters; Windows PowerShell only.
+    Test-Connection (ICMP) and System.Net.Dns for hostnames. Read-only from a data perspective, but it is still
+    active network probing, so use it only on networks you are authorized to scan. No script parameters; Windows
+    PowerShell only.
 #>
 
 Set-StrictMode -Version Latest

@@ -1,10 +1,6 @@
 # m365
 
-Microsoft 365 PowerShell scripts for SharePoint Online and Microsoft Graph tasks.
-
-## Folder purpose summary
-
-This folder contains interactive technician-run scripts for tenant-wide M365 operations. Scripts are designed for Windows PowerShell sessions on technician workstations, not unattended LocalSystem jobs.
+Microsoft 365 PowerShell scripts for SharePoint Online and Microsoft Graph tasks. These are interactive and tenant-wide, so you run them from a Windows PowerShell session on your own workstation, not as an unattended LocalSystem job.
 
 ## Script inventory
 
@@ -29,7 +25,7 @@ Install-Module Microsoft.Graph -Scope CurrentUser
 
 ## Safety and impact notes
 
-- These scripts can act on tenant-wide data and should be run only in authorized environments.
+- These scripts act on tenant-wide data, so only run them on tenants you are authorized to manage.
 - `EmptySharePointRecycleBin.ps1` is destructive and irreversible for recycle-bin content.
 - `ExportM365GroupsAndMembersCsv.ps1` is read-only for directory objects but writes CSV data to disk.
 

@@ -1,3 +1,13 @@
+<#
+.SYNOPSIS
+    Interactively creates a new AD user or copies one from an existing user.
+.DESCRIPTION
+    Prompts for first/last name, username, title, department, manager, phone, email, and a temporary
+    password (12+ characters with complexity, change at first logon). New mode asks for the target OU
+    and UPN domain. Copy mode pulls the OU, group memberships, and any unset fields from the source
+    user. Requires the ActiveDirectory RSAT module and a domain admin context.
+#>
+
 # Requires: ActiveDirectory module
 
 Import-Module ActiveDirectory

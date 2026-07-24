@@ -4,7 +4,7 @@
 .DESCRIPTION
     Enumerates files under a prompted OneDrive path, filters by last access time,
     then runs attrib.exe per file. Prompts for path and age threshold in days only.
-    No script parameters — operator input via Read-Host only.
+    Everything is collected at the prompts, so no parameters are needed.
 #>
 
 Set-StrictMode -Version Latest

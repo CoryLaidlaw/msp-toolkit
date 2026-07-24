@@ -58,7 +58,7 @@ function Remove-FilesSafely {
         }
     }
     catch {
-        Write-Warning "Could not clean: $Path — $($_.Exception.Message)"
+        Write-Warning "Could not clean: $Path - $($_.Exception.Message)"
     }
 }
 
@@ -146,7 +146,7 @@ function Clear-AllRecycleBin {
             }
         }
         catch {
-            Write-Warning "Could not clear $($sidFolder.FullName) — $($_.Exception.Message)"
+            Write-Warning "Could not clear $($sidFolder.FullName) - $($_.Exception.Message)"
         }
     }
 
@@ -163,7 +163,7 @@ function Get-CleanableUserProfile {
     # Win32_UserProfile.Special covers LocalSystem, LocalService, NetworkService,
     # IIS AppPool accounts, and other service/virtual accounts.
     # Loaded = $true means the profile hive is mounted (user is logged on).
-    # UNC LocalPath means a roaming/redirected profile on a network share — skip.
+    # UNC LocalPath means a roaming/redirected profile on a network share, so skip it.
     Get-CimInstance -ClassName Win32_UserProfile -ErrorAction SilentlyContinue |
         Where-Object {
             -not $_.Special -and
@@ -241,7 +241,7 @@ function Invoke-CleanMgrSageRun {
         }
     }
     catch {
-        Write-Warning "Could not run Disk Cleanup utility — $($_.Exception.Message)"
+        Write-Warning "Could not run Disk Cleanup utility - $($_.Exception.Message)"
     }
 }
 

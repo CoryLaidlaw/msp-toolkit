@@ -4,7 +4,7 @@
 .DESCRIPTION
     Prompts once for the target folder path, ensures C:\Temp staging exists, runs robocopy /MIR,
     then leaves the target folder in place (contents wiped). Robocopy exit codes 0-7 are treated as success.
-    No script parameters — operator input via Read-Host only.
+    All input comes from the prompts; the script takes no parameters.
 #>
 
 Set-StrictMode -Version Latest
@@ -50,7 +50,7 @@ function Invoke-RobocopyMirrorEmpty {
         throw "robocopy.exe not found at $robocopy"
     }
 
-    # Trim trailing backslashes — robocopy mis-parses quoted paths ending in '\'
+    # Trim trailing backslashes: robocopy mis-parses quoted paths ending in '\'
     # (e.g. "C:\foo\" becomes C:\foo" to its argv parser).
     $src = $EmptySource.TrimEnd('\')
     $dst = $TargetPath.TrimEnd('\')
@@ -122,7 +122,7 @@ function Invoke-Main {
                 Remove-RobocopyStagingFolder -StagingPath $staging
             }
             catch {
-                Write-Warning "Could not remove staging folder: $staging — $($_.Exception.Message)"
+                Write-Warning "Could not remove staging folder: $staging - $($_.Exception.Message)"
             }
         }
     }

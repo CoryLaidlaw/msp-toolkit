@@ -1,10 +1,6 @@
 # windows/disk
 
-PowerShell helpers for disk space, cleanup, and sizing.
-
-## Folder purpose summary
-
-This folder contains operational scripts for disk cleanup, storage analysis, and page file checks/configuration on Windows endpoints.
+Scripts for disk cleanup, storage analysis, and page file checks/configuration on Windows endpoints.
 
 ## Script inventory
 
@@ -30,15 +26,15 @@ This folder contains operational scripts for disk cleanup, storage analysis, and
 
 ## DiskCleanup.ps1
 
-**Purpose:** Clear common Windows temporary data and caches on `C:`, and when elevated run the Disk Cleanup utility (`cleanmgr`) and DISM component cleanup.
+**Purpose:** Clear common Windows temporary data and caches on `C:`, and when elevated run DISM component cleanup plus the Disk Cleanup utility (`cleanmgr`, skipped under LocalSystem).
 
 **Execution context:** Intended for **elevated Administrator** or **LocalSystem**. Some steps require elevation; the script warns and skips those when not admin. **Profile-bound steps** (current user `%LOCALAPPDATA%` temp, thumbnail cache, Edge/Chrome/Firefox caches) run only when **not** LocalSystem (`S-1-5-18`); under LocalSystem those steps are skipped with a short log line.
 
-**Operator inputs (prompts only — no parameters):**
+**Operator inputs** (prompted at run time, no parameters):
 
-1. **`Continue with cleanup? (Y/N)`** — Must be **Y** or **yes** (case-insensitive) to proceed; empty or anything else aborts.
+1. **`Continue with cleanup? (Y/N)`**: answer **Y** or **yes** (case-insensitive) to proceed; empty or anything else aborts.
 
-When elevated, **cleanmgr** runs automatically after file cleanup (no separate prompt): it sets `HKLM:\...\VolumeCaches\*\StateFlags0001` and runs `cleanmgr.exe /sagerun:1`.
+When elevated and not running as LocalSystem, **cleanmgr** runs automatically after file cleanup (no separate prompt): it sets `HKLM:\...\VolumeCaches\*\StateFlags0001` and runs `cleanmgr.exe /sagerun:1` with a 5-minute timeout.
 
 **What it does (summary):**
 
@@ -49,7 +45,7 @@ When elevated, **cleanmgr** runs automatically after file cleanup (no separate p
 - When elevated: **DISM** `/AnalyzeComponentStore` and `/StartComponentCleanup` with **`/ResetBase`** (irreversible servicing-store reduction; see Microsoft DISM guidance).
 - Does **not** delete files from **`C:\Windows\Installer`** (avoids breaking uninstall/repair).
 
-**Commands and APIs used:** `Get-PSDrive`, `Get-ChildItem`, `Remove-Item`, `Clear-RecycleBin`, `New-Item`, `Start-Process` (`cleanmgr.exe`, `Dism.exe`), `Set-ItemProperty` (VolumeCaches for cleanmgr), `Read-Host`.
+**Commands and APIs used:** `Get-PSDrive`, `Get-ChildItem`, `Remove-Item` (including a direct `C:\$Recycle.Bin` sweep), `New-Item`, `Start-Process` (`cleanmgr.exe`, `Dism.exe`), `Set-ItemProperty` (VolumeCaches for cleanmgr), `Read-Host`.
 
 **File path behavior:** Creates `C:\Temp` if missing; deletes contents of `C:\Temp`; also clears additional fixed cleanup targets (`C:\Windows\Temp`, WER queues, IIS logs when present, and other documented paths).
 
@@ -68,11 +64,11 @@ When elevated, **cleanmgr** runs automatically after file cleanup (no separate p
 
 **Execution context:** Intended for **elevated Administrator** or **LocalSystem**. The script only **reads** metadata and file sizes (no deletes). Under **LocalSystem**, paths like `C:\Users` still enumerate, but permission denials may appear as **zero-size** or skipped subtrees where `Get-ChildItem` is denied; compare with an interactive admin session when results look unexpected.
 
-**Operator inputs (prompts only — no parameters):**
+**Operator inputs** (prompted at run time, no parameters):
 
-1. **`Folder path to analyze [default: C:\Users]`** — Target root. Press **Enter** to use `C:\Users`. Must exist and be a **folder**; otherwise the script prints an error and exits with code **1**.
-2. **`Minimum child size to consider for expansion, in GB [default: 10]`** — Child must be **strictly greater** than this value (in GB) to qualify for expansion. Press **Enter** for **10**. Non-positive or non-numeric input is rejected until valid or Enter for default.
-3. **`Percentage points above average sibling share required to expand [default: 10]`** — Let `avg` be the average of each child’s **% of parent** among immediate siblings. A child qualifies only if `(child % of parent - avg)` is **strictly greater** than this number. Press **Enter** for **10**. Enter **0** to require only “above average” (still combined with the size threshold). Invalid input is rejected until valid or Enter for default.
+1. **`Folder path to analyze [default: C:\Users]`**: target root. Press **Enter** to use `C:\Users`. Must exist and be a **folder**; otherwise the script prints an error and exits with code **1**.
+2. **`Minimum child size to consider for expansion, in GB [default: 10]`**: child must be **strictly greater** than this value (in GB) to qualify for expansion. Press **Enter** for **10**. Non-positive or non-numeric input is rejected until valid or Enter for default.
+3. **`Percentage points above average sibling share required to expand [default: 10]`**: let `avg` be the average of each child’s **% of parent** among immediate siblings. A child qualifies only if `(child % of parent - avg)` is **strictly greater** than this number. Press **Enter** for **10**. Enter **0** to require only “above average” (still combined with the size threshold). Invalid input is rejected until valid or Enter for default.
 
 **What it does (summary):**
 
@@ -85,7 +81,7 @@ When elevated, **cleanmgr** runs automatically after file cleanup (no separate p
 
 **Safety / impact:**
 
-- **No deletions or configuration changes** — sizing only.
+- **No deletions or configuration changes**, sizing only.
 - **Heavy disk and CPU use** on large paths: each measured folder performs a **full recursive** file enumeration under that folder. Prefer narrow targets or maintenance windows.
 
 **Validation:**
@@ -102,9 +98,9 @@ When elevated, **cleanmgr** runs automatically after file cleanup (no separate p
 
 **Execution context:** Intended for **elevated Administrator** or **LocalSystem**. The script only **reads** file metadata (no deletes). Under **LocalSystem**, permission denials may omit files; totals can be lower than under an interactive admin session.
 
-**Operator inputs (prompts only — no parameters):**
+**Operator inputs** (prompted at run time, no parameters):
 
-1. **`Folder path to analyze [default: C:\Users]`** — Root folder to scan. Press **Enter** for `C:\Users`. Must exist and be a **folder**; otherwise the script prints **`[ERROR]`** and exits with code **1**.
+1. **`Folder path to analyze [default: C:\Users]`**: root folder to scan. Press **Enter** for `C:\Users`. Must exist and be a **folder**; otherwise the script prints **`[ERROR]`** and exits with code **1**.
 
 **What it does (summary):**
 
@@ -116,7 +112,7 @@ When elevated, **cleanmgr** runs automatically after file cleanup (no separate p
 
 **Safety / impact:**
 
-- **No deletions or configuration changes** — sizing only.
+- **No deletions or configuration changes**, sizing only.
 - **Heavy disk and CPU use** on large paths (full recursive file list in memory). Prefer narrow targets or maintenance windows.
 
 **Validation:**
@@ -133,10 +129,10 @@ When elevated, **cleanmgr** runs automatically after file cleanup (no separate p
 
 **Execution context:** Intended for **elevated Administrator**. Without elevation, clearing other users’ Downloads may **fail** or be incomplete; the script warns when not running as admin.
 
-**Operator inputs (prompts only — no parameters):**
+**Operator inputs** (prompted at run time, no parameters):
 
-1. **`Users root path [default: C:\Users]`** — Folder that contains profile directories (each named for a user). Press **Enter** for `C:\Users`.
-2. **`Continue with Downloads cleanup? (Y/N)`** — Must be **Y** or **yes** (case-insensitive) to proceed.
+1. **`Users root path [default: C:\Users]`**: folder that contains profile directories (each named for a user). Press **Enter** for `C:\Users`.
+2. **`Continue with Downloads cleanup? (Y/N)`**: answer **Y** or **yes** (case-insensitive) to proceed.
 
 **What it does (summary):**
 
@@ -167,9 +163,9 @@ When elevated, **cleanmgr** runs automatically after file cleanup (no separate p
 
 **Execution context:** Intended for **elevated Administrator** or **LocalSystem** when the target paths require it.
 
-**Operator inputs (prompts only — no parameters):**
+**Operator inputs** (prompted at run time, no parameters):
 
-1. **`Folder path to empty (robocopy /MIR wipe)`** — Must exist and be a **directory**. Entering the path is the only prompt; the script then runs the wipe.
+1. **`Folder path to empty (robocopy /MIR wipe)`**: must exist and be a **directory**. Entering the path is the only prompt; the script then runs the wipe.
 
 **What it does (summary):**
 
@@ -198,10 +194,10 @@ When elevated, **cleanmgr** runs automatically after file cleanup (no separate p
 
 **Execution context:** Run in a context that can read the OneDrive path and modify attributes (typically the **user** who owns the sync, or **Administrator** with rights to that profile).
 
-**Operator inputs (prompts only — no parameters):**
+**Operator inputs** (prompted at run time, no parameters):
 
-1. **`OneDrive folder path (local sync root)`** — Must exist and be a **folder**.
-2. **`Minimum age in days ... [default: 30]`** — Files with **`LastAccessTime`** **on or after** the cutoff are **skipped**. Press **Enter** for **30**.
+1. **`OneDrive folder path (local sync root)`**: must exist and be a **folder**.
+2. **`Minimum age in days ... [default: 30]`**: files with **`LastAccessTime`** **on or after** the cutoff are **skipped**. Press **Enter** for **30**.
 
 **What it does (summary):**
 
@@ -233,42 +229,44 @@ When elevated, **cleanmgr** runs automatically after file cleanup (no separate p
 
 **Execution context:** Requires **elevated Administrator** (registry `HKLM` and `Win32_ComputerSystem` changes). A **reboot** is usually required before the new page file layout applies fully.
 
-**Operator inputs:** **None** in the script (no `Read-Host`); the path and sizes are **fixed in the file** (`C:\pagefile.sys` with **4096** / **8192** MB as written in `SetPageFile.ps1`).
+**Operator inputs** (prompted at run time, no parameters):
+
+1. **`Pagefile path [default: C:\pagefile.sys]`**: press **Enter** for the default.
+2. **`Initial size (MB) [default: 4096]`**: positive integer, Enter for the default.
+3. **`Maximum size (MB) [default: 8192]`**: positive integer, Enter for the default. Must be at least the initial size or the script errors out before making changes.
 
 **What it does (summary):**
 
 - Queries **`Win32_ComputerSystem`**; if **`AutomaticManagedPagefile`** is true, sets it to **false** with **`Set-CimInstance`**.
-- Sets **`HKLM:\SYSTEM\CurrentControlSet\Control\Session Manager\Memory Management\PagingFiles`** to the configured string.
+- Sets **`HKLM:\SYSTEM\CurrentControlSet\Control\Session Manager\Memory Management\PagingFiles`** to `<path> <initial> <maximum>`.
 
-**Commands and APIs used:** `Get-CimInstance`, `Set-CimInstance`, `Set-ItemProperty`.
+**Commands and APIs used:** `Read-Host`, `Get-CimInstance`, `Set-CimInstance`, `Set-ItemProperty`.
 
 **File path behavior:** Writes page file configuration to `HKLM:\SYSTEM\CurrentControlSet\Control\Session Manager\Memory Management\PagingFiles`; no `C:\Temp` usage.
 
-**Safety / impact:**
+**Safety / impact:** Changes **virtual memory** configuration; inappropriate sizing can hurt stability under load.
 
-- Changes **virtual memory** configuration; inappropriate sizing can hurt stability under load.
-- Does **not** follow the repo’s usual prompt-only operator input pattern; confirm the hardcoded values before running.
+**Validation:** Ends with **`[SUCCESS] SetPageFile completed.`** and the `PagingFiles` value it wrote. Verify in **System Properties → Advanced → Performance → Advanced → Virtual memory** after reboot, or run **`PageFileSizeCheck.ps1`**.
 
-**Validation:** No script-emitted completion line; verify in **System Properties → Advanced → Performance → Advanced → Virtual memory** after reboot, or use **`PageFileSizeCheck.ps1`** for on-disk **`C:\pagefile.sys`** size only.
-
-**Usage:** From an **elevated** Windows PowerShell session: `.\SetPageFile.ps1` (after editing the script if defaults are wrong for the machine).
+**Usage:** Paste into an **elevated** Windows PowerShell session and answer the prompts, or run `.\SetPageFile.ps1` from this folder.
 
 ## PageFileSizeCheck.ps1
 
-**Purpose:** **Read-only** check: reports whether **`C:\pagefile.sys`** exists and its **size** on disk.
+**Purpose:** **Read-only** check: reports the active, configured, and on-disk state of **`C:\pagefile.sys`**.
 
-**Execution context:** **Administrator** may be required if the account cannot read **`C:\pagefile.sys`**.
+**Execution context:** Works best **elevated**; without elevation the on-disk size probe can fail (CIM data still reports).
 
 **Operator inputs:** **None** (always checks **`C:\pagefile.sys`**).
 
 **What it does (summary):**
 
-- If **`C:\pagefile.sys`** exists as a **file**, prints path, size in GB (4 decimal places), and raw byte length.
-- If the file does not exist, prints a short **does not exist** message.
+- Queries CIM (**`Win32_PageFileUsage`**, **`Win32_PageFileSetting`**, **`Win32_ComputerSystem`**) for allocated/current/peak usage, configured sizes, and whether automatic management is on. CIM is used because the OS holds `pagefile.sys` with an exclusive handle, so the FileSystem provider can report it as missing.
+- Best-effort **`[System.IO.FileInfo]`** probe prints on-disk size in GB and bytes when readable.
+- If nothing reports, prints a not-found note and suggests rerunning elevated.
 
-**Commands and APIs used:** `Test-Path`, `Get-Item`.
+**Commands and APIs used:** `Get-CimInstance`, `[System.IO.FileInfo]`.
 
-**Safety / impact:** **None** (read-only). Does not read registry or change page file configuration.
+**Safety / impact:** **None** (read-only). Changes nothing.
 
 **File path behavior:** No writes; no **`C:\Temp`** use.
 

@@ -1,16 +1,14 @@
-# User Profiles Scripts
+# windows/user-profiles
 
-## Purpose
-
-This folder contains scripts used to inventory local Windows user profiles, identify profiles that map to disabled or unresolved domain users, and remove selected profiles to recover disk space.
+Scripts to inventory local Windows user profiles, spot profiles that map to disabled or unresolved domain users, and remove selected profiles to recover disk space.
 
 ## Safety and Impact Notes
 
-These scripts are intended for LocalSystem or elevated admin execution contexts. `RemoveOneUserProfile.ps1` and `RemoveMultipleUserProfile.ps1` are destructive and permanently delete local user profiles, including local profile data and profile registry state. Validate target users and paths before running removal scripts.
+Run these as LocalSystem or an elevated admin. `RemoveOneUserProfile.ps1` and `RemoveMultipleUserProfile.ps1` are destructive; they permanently delete local user profiles, including profile data and profile registry state, so double-check target users and paths before you run them.
 
 ## Validation Guidance
 
-Successful runs should produce explicit `[SUCCESS]`/`[INFO]` output lines and expected CSV files in `C:\Temp` where applicable. Failures should emit `[ERROR]` output without terminating the active PowerShell session.
+A good run prints explicit `[SUCCESS]`/`[INFO]` lines and leaves the expected CSV files in `C:\Temp` where applicable. Failures print `[ERROR]` without killing your PowerShell session.
 
 ## GetUserListAsCsv.ps1
 - Purpose: Enumerate local non-special user profiles and export domain-matched profiles plus unresolved profiles.
@@ -56,8 +54,3 @@ Successful runs should produce explicit `[SUCCESS]`/`[INFO]` output lines and ex
 - Key commands/functions: `Import-Csv`, `Get-WmiObject Win32_UserProfile`, `.Delete()`, `Get-PSDrive`.
 - Impact: Destructive; permanently removes each matching profile path listed in the CSV.
 - Validation: Summary output reports Deleted/NotFound/Failed/Skipped counts and free-space line is printed.
-
-## Ownership and last reviewed
-
-- Owner: repository maintainers
-- Last reviewed: 2026-04-25

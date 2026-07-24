@@ -6,7 +6,8 @@
     Registry::HKEY_USERS\<SID>\Printers\Connections, and loops through a menu for Add/Delete/Rename/Exit. Add supports
     network and local/IP paths, each with manual or CSV mode. Rename supports interactive or CSV mode. Delete removes
     selected mapped connection keys by number with one batch confirmation or removes installed printer objects from CSV.
-    Intended for elevated admin or technician context. Operator input is prompt-only (no script parameters).
+    Intended for elevated admin or technician context. Everything runs through the menu prompts, so there are no
+    script parameters.
 #>
 
 Set-StrictMode -Version Latest

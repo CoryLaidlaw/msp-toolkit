@@ -1,10 +1,6 @@
 # windows/monitoring
 
-PowerShell helpers for runtime health checks and event-driven diagnostics on Windows endpoints.
-
-## Folder purpose summary
-
-This folder contains read-only diagnostic scripts that query Windows event logs and system state to surface operational problems (crash loops, service failures, etc.) without making changes to the system.
+Read-only diagnostic scripts for Windows endpoints. They query event logs and system state to surface problems (crash loops, service failures, and so on) without changing anything on the machine.
 
 ## Script inventory
 
@@ -17,7 +13,7 @@ This folder contains read-only diagnostic scripts that query Windows event logs 
 
 ## Validation guidance
 
-- Look for `OK —`, `WARN —`, and `*** CRASH LOOP DETECTED ***` lines in script output.
+- Look for `OK -`, `WARN -`, and `*** CRASH LOOP DETECTED ***` lines in script output.
 - An `[ERROR]` line indicates an unexpected failure; check the message for the specific cause.
 
 ---
@@ -28,10 +24,10 @@ This folder contains read-only diagnostic scripts that query Windows event logs 
 
 **Execution context:** Intended for **elevated Administrator** or **LocalSystem**. Reading the Application event log requires at least read access to the Security/Event Log; under most RMM deployments this is available as LocalSystem.
 
-**Operator inputs (prompts only — no parameters):**
+**Operator inputs:** the script prompts for everything it needs, so there are no parameters to pass.
 
-1. **`Look-back window in minutes [default: 60]`** — How far back to search for events. Press **Enter** for **60**. Must be a positive integer.
-2. **`Crash count threshold for CRASH LOOP [default: 5]`** — Number of ID 1000 events per process at or above which a crash loop is declared. Press **Enter** for **5**. Must be a positive integer.
+1. **`Look-back window in minutes [default: 60]`**: how far back to search for events. Press **Enter** for **60**. Must be a positive integer.
+2. **`Crash count threshold for CRASH LOOP [default: 5]`**: how many ID 1000 events per process it takes to declare a crash loop. Press **Enter** for **5**. Must be a positive integer.
 
 **What it does (summary):**
 

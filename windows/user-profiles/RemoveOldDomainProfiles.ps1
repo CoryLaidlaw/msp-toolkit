@@ -4,8 +4,8 @@
 .DESCRIPTION
     Uses HKLM ProfileList (SID length > 20) and LocalProfileLoadTime high/low as an approximate last-use signal, lists
     matches, then prompts Y/N before Remove-CimInstance on Win32_UserProfile. Intended for elevated admin or
-    LocalSystem. Does not remove Entra-only or local accounts without domain-style SIDs in that key. Operator input
-    is prompt-only (no script parameters).
+    LocalSystem. Does not remove Entra-only or local accounts without domain-style SIDs in that key. All input
+    comes from the prompts; there are no script parameters.
 #>
 
 Set-StrictMode -Version Latest
@@ -103,7 +103,7 @@ function Remove-OldDomainProfiles {
                 Write-Host "Deleted: $($profile.ProfilePath)" -ForegroundColor Green
             }
             else {
-                Write-Host "CIM profile not found for: $($profile.ProfilePath) — skipping" -ForegroundColor DarkYellow
+                Write-Host "CIM profile not found for: $($profile.ProfilePath) - skipping" -ForegroundColor DarkYellow
             }
         }
         catch {

@@ -5,7 +5,7 @@
     Elevated or LocalSystem session required. Prompts once before stopping services, killing processes, running vendor
     uninstall (msiexec or bundled uninstaller), and deleting Program Files / ProgramData folders matching Bomgar or
     BeyondTrust. MSI verbose log is written under C:\Temp (folder created if missing). Uses takeown/icacls when
-    folder removal fails. Operator input is prompt-only (no script parameters).
+    folder removal fails. The script asks for what it needs at the prompt and takes no parameters.
 #>
 
 Set-StrictMode -Version Latest

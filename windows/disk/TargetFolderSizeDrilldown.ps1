@@ -5,7 +5,7 @@
     Recursively measures immediate child folders; expands further when a child exceeds a size
     threshold (GB) and is more than N percentage points above the average sibling share of the
     parent. All settings are collected via Read-Host (no script parameters). Heavy disk I/O on
-    large trees — run during a maintenance window when pointing at big paths.
+    large trees, so run during a maintenance window when pointing at big paths.
 #>
 
 Set-StrictMode -Version Latest
@@ -202,7 +202,7 @@ function Invoke-Main {
     Write-Host $header -ForegroundColor White
     Write-Host $divider -ForegroundColor DarkGray
 
-    $rootRow = "  {0,-$colFolder} {1,$colSize}  {2,$colPct}" -f $TargetPath, $rootSizeGB, '—'
+    $rootRow = "  {0,-$colFolder} {1,$colSize}  {2,$colPct}" -f $TargetPath, $rootSizeGB, '-'
     Write-Host $rootRow -ForegroundColor Green
 
     foreach ($node in $Script:TreeNodes) {
