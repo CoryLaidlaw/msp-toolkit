@@ -4,16 +4,12 @@
 .DESCRIPTION
     Prompts for CSV path (default under C:\Temp), identity column, optional domain controller, optional alternate
     credential, and preview/apply mode. Resolves users/managers, writes a pre-change backup CSV, then applies delta
-    updates with Set-ADUser. Logs and transcript are written under C:\Temp. Intended for elevated admin/LocalSystem
+    updates with Set-ADUser. Logs and backup CSVs are written under C:\Temp. Intended for elevated admin/LocalSystem
     with ActiveDirectory module available.
 #>
 
 Set-StrictMode -Version Latest
 $ErrorActionPreference = 'Stop'
-
-function New-Timestamp {
-    return (Get-Date -Format 'yyyyMMdd_HHmmss')
-}
 
 function Ensure-TempDirectory {
     $tempPath = 'C:\Temp'
@@ -173,14 +169,10 @@ function Get-UpdateValue {
 function Invoke-Main {
     Ensure-TempDirectory
 
-    $runId = New-Timestamp
+    $runId = Get-Date -Format 'yyyyMMdd_HHmmss'
     $script:LogPath = "C:\Temp\UpdateAdUserFromCsv_$runId.log"
-    $script:TranscriptPath = "C:\Temp\UpdateAdUserFromCsv_$runId.transcript.txt"
+    Write-Log -Level INFO -Message "Run started. Log: '$($script:LogPath)'."
 
-    try { Start-Transcript -Path $script:TranscriptPath -ErrorAction Stop | Out-Null } catch { }
-    Write-Log -Level INFO -Message "Run started. Log: '$($script:LogPath)'. Transcript: '$($script:TranscriptPath)'."
-
-    try {
         if (-not (Get-Module -ListAvailable -Name ActiveDirectory)) {
             throw 'ActiveDirectory module is not available. Install RSAT Active Directory module first.'
         }
@@ -241,14 +233,14 @@ function Invoke-Main {
             try {
                 $idValue = [string]$row.$identityColumn
                 if ([string]::IsNullOrWhiteSpace($idValue)) {
-                    Write-Log -Level WARN -Message "Row $processed: Missing '$identityColumn'. Skipping."
+                    Write-Log -Level WARN -Message "Row ${processed}: Missing '$identityColumn'. Skipping."
                     $skipped++
                     continue
                 }
 
                 $user = Resolve-ADUser -Value $idValue -By $identityColumn -CommonParams $commonParams
                 if (-not $user) {
-                    Write-Log -Level WARN -Message "Row $processed: User not found for '$identityColumn'='$idValue'. Skipping."
+                    Write-Log -Level WARN -Message "Row ${processed}: User not found for '$identityColumn'='$idValue'. Skipping."
                     $skipped++
                     continue
                 }
@@ -329,10 +321,6 @@ function Invoke-Main {
         else {
             Write-Host '[SUCCESS] AD user update processing completed.' -ForegroundColor Green
         }
-    }
-    finally {
-        try { Stop-Transcript | Out-Null } catch { }
-    }
 }
 
 try {

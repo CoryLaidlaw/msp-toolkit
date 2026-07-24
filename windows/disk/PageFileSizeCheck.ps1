@@ -1,6 +1,6 @@
 <#
 .SYNOPSIS
-    Reports whether C:\pagefile.sys exists and its size on disk.
+    Reports whether C:\pagefile.sys exists and its configured/allocated size.
 .DESCRIPTION
     Read-only check of C:\pagefile.sys. No prompts or script parameters.
     Queries CIM (Win32_PageFileUsage / Win32_PageFileSetting / Win32_ComputerSystem)
@@ -62,23 +62,6 @@ function Get-PagefileSizeReport {
         Write-Host "Win32_ComputerSystem query failed: $($_.Exception.Message)"
     }
 
-    try {
-        $fi = [System.IO.FileInfo]::new($LiteralPath)
-        if ($fi.Exists) {
-            $sizeBytes = $fi.Length
-            $sizeGB = [Math]::Round($sizeBytes / 1GB, 4)
-            Write-Host "On-disk file: $LiteralPath"
-            Write-Host "  Size: $sizeGB GB ($sizeBytes bytes)"
-            $reported = $true
-        }
-    }
-    catch {
-        # On-disk size is best-effort: pagefile.sys is held with an exclusive
-        # handle and FileInfo.Length may throw under tight ACLs even when the
-        # file exists. CIM data above is authoritative.
-        Write-Verbose "FileInfo probe failed: $($_.Exception.Message)"
-    }
-
     if (-not $reported) {
         Write-Host "No active or configured pagefile found at: $LiteralPath"
         Write-Host 'Note: pagefile.sys is a locked OS file. If you expect it to exist,'
@@ -89,15 +72,10 @@ function Get-PagefileSizeReport {
 function Invoke-Main {
     Get-PagefileSizeReport -LiteralPath 'C:\pagefile.sys'
     Write-Host '[SUCCESS] PageFileSizeCheck completed.'
-    return 0
 }
 
 try {
-    $statusCode = Invoke-Main
-    if ($statusCode -ne 0) {
-        Write-Error "[ERROR] PageFileSizeCheck completed with status code $statusCode."
-        return
-    }
+    Invoke-Main
 }
 catch {
     Write-Host "[ERROR] $($_.Exception.Message)" -ForegroundColor Red

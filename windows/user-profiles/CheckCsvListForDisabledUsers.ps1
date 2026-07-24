@@ -51,10 +51,10 @@ function Invoke-Main {
             continue
         }
 
-        try {
-            $adUser = Get-ADUser -Filter "SamAccountName -eq '$samAccountName'" -Properties DistinguishedName, Enabled -ErrorAction Stop
-        }
-        catch {
+        $safeSamAccountName = $samAccountName -replace "'", "''"
+        $adUser = Get-ADUser -Filter "SamAccountName -eq '$safeSamAccountName'" -Properties DistinguishedName, Enabled -ErrorAction Stop
+
+        if ($null -eq $adUser) {
             Write-Output "[WARN] User '$samAccountName' could not be found in AD. Adding to Disabled Users list."
             $disabledUsers += $user
             $notFoundCount++
@@ -86,15 +86,10 @@ function Invoke-Main {
     $disabledUsers | Export-Csv -Path $outputPath -NoTypeInformation
     Write-Output "[SUCCESS] Exported $($disabledUsers.Count) rows to $outputPath"
     Write-Output "[INFO] Summary: Enabled=$enabledCount Disabled=$disabledCount NotFound=$notFoundCount Skipped=$skippedCount"
-    return 0
 }
 
 try {
-    $statusCode = Invoke-Main
-    if ($statusCode -ne 0) {
-        Write-Error "[ERROR] CheckCsvListForDisabledUsers completed with status code $statusCode."
-        return
-    }
+    Invoke-Main
 }
 catch {
     Write-Error "[ERROR] $($_.Exception.Message)"

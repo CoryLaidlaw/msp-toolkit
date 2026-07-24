@@ -11,6 +11,11 @@
 Set-StrictMode -Version Latest
 $ErrorActionPreference = 'Stop'
 
+$script:UninstallRoots = @(
+    'HKLM:\SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall\*',
+    'HKLM:\SOFTWARE\WOW6432Node\Microsoft\Windows\CurrentVersion\Uninstall\*'
+)
+
 function Test-ReadHostYes {
     param(
         [Parameter(Mandatory)]
@@ -89,12 +94,7 @@ function Invoke-BeyondTrustUninstall {
         [string]$LogPath
     )
 
-    $uninstallRoots = @(
-        'HKLM:\SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall\*',
-        'HKLM:\SOFTWARE\WOW6432Node\Microsoft\Windows\CurrentVersion\Uninstall\*'
-    )
-
-    $apps = Get-ItemProperty -Path $uninstallRoots -ErrorAction SilentlyContinue |
+    $apps = Get-ItemProperty -Path $script:UninstallRoots -ErrorAction SilentlyContinue |
         Where-Object {
             $_.DisplayName -like '*BeyondTrust*' -or $_.DisplayName -like '*Jump Client*'
         }
@@ -141,13 +141,9 @@ function Wait-UninstallRegistryGone {
 
     Write-Host 'Waiting for uninstall to complete...'
     $elapsed = 0
-    $uninstallRoots = @(
-        'HKLM:\SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall\*',
-        'HKLM:\SOFTWARE\WOW6432Node\Microsoft\Windows\CurrentVersion\Uninstall\*'
-    )
 
     while ($elapsed -lt $TimeoutSeconds) {
-        $stillInstalled = @(Get-ItemProperty -Path $uninstallRoots -ErrorAction SilentlyContinue |
+        $stillInstalled = @(Get-ItemProperty -Path $script:UninstallRoots -ErrorAction SilentlyContinue |
             Where-Object {
                 $_.DisplayName -like '*BeyondTrust*' -or $_.DisplayName -like '*Jump Client*'
             })
@@ -237,11 +233,7 @@ function Get-BeyondTrustRemainingArtifacts {
         }
     )
 
-    $uninstallRoots = @(
-        'HKLM:\SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall\*',
-        'HKLM:\SOFTWARE\WOW6432Node\Microsoft\Windows\CurrentVersion\Uninstall\*'
-    )
-    $remainingReg = @(Get-ItemProperty -Path $uninstallRoots -ErrorAction SilentlyContinue |
+    $remainingReg = @(Get-ItemProperty -Path $script:UninstallRoots -ErrorAction SilentlyContinue |
         Where-Object {
             $_.DisplayName -like '*BeyondTrust*' -or $_.DisplayName -like '*Jump Client*'
         })
@@ -266,11 +258,8 @@ function Invoke-Main {
         return
     }
 
-    $tempPath = 'C:\Temp'
-    if (-not (Test-Path -LiteralPath $tempPath)) {
-        New-Item -ItemType Directory -Path $tempPath -Force | Out-Null
-    }
-    $logPath = Join-Path $tempPath 'beyondtrust-uninstall.log'
+    $null = New-Item -Path 'C:\Temp' -ItemType Directory -Force
+    $logPath = Join-Path 'C:\Temp' 'beyondtrust-uninstall.log'
 
     Remove-BomgarCleanupRunValues
 

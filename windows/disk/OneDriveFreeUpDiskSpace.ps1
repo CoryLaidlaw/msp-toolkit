@@ -47,13 +47,25 @@ function Invoke-AttribDehydrate {
 }
 
 function Invoke-Main {
-    param(
-        [Parameter(Mandatory)]
-        [string]$OneDrivePath,
-        [Parameter(Mandatory)]
-        [int]$DaysOld
-    )
+    # --- Input collection ---
+    $OneDrivePath = Read-OneDriveRootPath
+    if ([string]::IsNullOrWhiteSpace($OneDrivePath)) {
+        Write-Host '[ERROR] No path entered.' -ForegroundColor Red
+        return
+    }
 
+    if (-not (Test-Path -LiteralPath $OneDrivePath -PathType Container)) {
+        Write-Host "[ERROR] Path not found or not a folder: $OneDrivePath" -ForegroundColor Red
+        return
+    }
+
+    $DaysOld = Read-PositiveIntDays
+
+    Write-Host ""
+    Write-Host "OneDrive path: $OneDrivePath"
+    Write-Host "Age threshold: $DaysOld days (files newer than cutoff are skipped)"
+
+    # --- Main execution ---
     $cutoffDate = (Get-Date).AddDays(-$DaysOld)
     Write-Host ""
     Write-Host "Cutoff (files with LastAccessTime before this are processed): $($cutoffDate.ToString('yyyy-MM-dd HH:mm'))"
@@ -99,22 +111,22 @@ function Invoke-Main {
         $batchCounter++
 
         if ($batchCounter -ge $batchSize) {
-            $percentComplete = [Math]::Round((($counter + $failed) / $filesToProcess.Count) * 100, 1)
-            $elapsedMinutes = $stopwatch.Elapsed.TotalMinutes
-            if ($elapsedMinutes -gt 0) {
-                $done = $counter + $failed
-                $filesPerMinute = [Math]::Round($done / $elapsedMinutes, 0)
-                $remaining = $filesToProcess.Count - $done
-                $eta = [Math]::Round($remaining / [Math]::Max($filesPerMinute, 1), 1)
-                Write-Host "Progress: $done of $($filesToProcess.Count) ($percentComplete%) | ~$filesPerMinute items/min | ETA: $eta min"
+            $done = $counter + $failed
+            $percentComplete = [Math]::Round(($done / $filesToProcess.Count) * 100, 1)
+            $elapsedSeconds = $stopwatch.Elapsed.TotalSeconds
+            $secondsRemaining = -1
+            if ($elapsedSeconds -gt 0) {
+                $rate = $done / $elapsedSeconds
+                if ($rate -gt 0) {
+                    $secondsRemaining = [int](($filesToProcess.Count - $done) / $rate)
+                }
             }
-            else {
-                Write-Host "Progress: $($counter + $failed) of $($filesToProcess.Count) ($percentComplete%)"
-            }
+            Write-Progress -Activity 'Dehydrating OneDrive files' -Status "$done of $($filesToProcess.Count) ($percentComplete%)" -PercentComplete $percentComplete -SecondsRemaining $secondsRemaining
             $batchCounter = 0
         }
     }
 
+    Write-Progress -Activity 'Dehydrating OneDrive files' -Completed
     $stopwatch.Stop()
 
     if ($counter -gt 0) {
@@ -146,26 +158,8 @@ function Invoke-Main {
     Write-Host '[SUCCESS] OneDriveFreeUpDiskSpace completed.'
 }
 
-# --- Input collection ---
-$onedrivePath = Read-OneDriveRootPath
-if ([string]::IsNullOrWhiteSpace($onedrivePath)) {
-    Write-Host '[ERROR] No path entered.' -ForegroundColor Red
-    return
-}
-
-if (-not (Test-Path -LiteralPath $onedrivePath -PathType Container)) {
-    Write-Host "[ERROR] Path not found or not a folder: $onedrivePath" -ForegroundColor Red
-    return
-}
-
-$daysOld = Read-PositiveIntDays
-
-Write-Host ""
-Write-Host "OneDrive path: $onedrivePath"
-Write-Host "Age threshold: $daysOld days (files newer than cutoff are skipped)"
-
 try {
-    Invoke-Main -OneDrivePath $onedrivePath -DaysOld $daysOld
+    Invoke-Main
 }
 catch {
     Write-Error "[ERROR] $($_.Exception.Message)"

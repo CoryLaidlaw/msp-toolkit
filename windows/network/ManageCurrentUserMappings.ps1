@@ -60,10 +60,35 @@ function Read-MenuChoice {
 }
 
 function Ensure-TempDirectory {
-    $tempPath = 'C:\Temp'
-    if (-not (Test-Path -LiteralPath $tempPath)) {
-        New-Item -Path $tempPath -ItemType Directory -Force | Out-Null
+    $null = New-Item -Path 'C:\Temp' -ItemType Directory -Force
+}
+
+function Test-UserContext {
+    param(
+        [Parameter(Mandatory)]
+        [string]$TargetSid
+    )
+
+    $runningSid = [System.Security.Principal.WindowsIdentity]::GetCurrent().User.Value
+
+    if ($runningSid -eq 'S-1-5-18') {
+        Write-Warning 'Running as LocalSystem (SYSTEM). Per-user connections are meaningless for SYSTEM.'
+        Write-Warning 'Network-mapped add/remove actions are blocked.'
+        return $false
     }
+
+    if ($runningSid -ne $TargetSid) {
+        Write-Warning 'The running account SID differs from the target user SID.'
+        Write-Warning "Running SID: $runningSid"
+        Write-Warning "Target SID:  $TargetSid"
+        Write-Warning 'Per-user add/remove operations will apply to the running account context, not the target user profile.'
+        if (-not (Test-ReadHostYes -Prompt 'Do you want to proceed with this operation? (Y/N)')) {
+            Write-Host 'Operation cancelled.' -ForegroundColor Cyan
+            return $false
+        }
+    }
+
+    return $true
 }
 
 function Read-CsvPathUnderTemp {
@@ -188,6 +213,10 @@ function Add-MappedDrive {
 }
 
 function Invoke-AddAction {
+    if (-not (Test-UserContext -TargetSid $context.Sid)) {
+        return
+    }
+
     Write-Host ''
     Write-Host 'Add mapped drive:' -ForegroundColor Yellow
     Write-Host '  [1] Manual'
@@ -245,6 +274,10 @@ function Invoke-DeleteAction {
     param(
         [object[]]$Drives = @()
     )
+
+    if (-not (Test-UserContext -TargetSid $context.Sid)) {
+        return
+    }
 
     Write-Host ''
     Write-Host 'Delete mapped drive:' -ForegroundColor Yellow

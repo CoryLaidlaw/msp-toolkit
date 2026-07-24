@@ -3,9 +3,11 @@
     Finds domain-linked local profiles whose ProfileList last-load time is older than N days and removes them via CIM.
 .DESCRIPTION
     Uses HKLM ProfileList (SID length > 20) and LocalProfileLoadTime high/low as an approximate last-use signal, lists
-    matches, then prompts Y/N before Remove-CimInstance on Win32_UserProfile. Intended for elevated admin or
-    LocalSystem. Does not remove Entra-only or local accounts without domain-style SIDs in that key. All input
-    comes from the prompts; there are no script parameters.
+    matches, then prompts Y/N before Remove-CimInstance on Win32_UserProfile. Profiles with no recorded load time
+    (which would otherwise resolve to year 1601) are excluded from the candidate list and flagged for manual review
+    instead of being auto-queued for deletion. Intended for elevated admin or LocalSystem. Does not remove Entra-only
+    or local accounts without domain-style SIDs in that key. All input comes from the prompts; there are no script
+    parameters.
 #>
 
 Set-StrictMode -Version Latest
@@ -58,11 +60,13 @@ function Get-DomainProfiles {
         ForEach-Object {
             $high = if ($null -ne $_.PSObject.Properties['LocalProfileLoadTimeHigh']) { $_.LocalProfileLoadTimeHigh } else { 0 }
             $low  = if ($null -ne $_.PSObject.Properties['LocalProfileLoadTimeLow'])  { $_.LocalProfileLoadTimeLow  } else { 0 }
+            $hasLoadTime = ($high -ne 0 -or $low -ne 0)
             $time = [datetime]::FromFileTime(([long]$high -shl 32) -bor ([long]$low -band [long]0xFFFFFFFF))
             [pscustomobject]@{
                 SID = $_.PSChildName
                 ProfilePath = $_.ProfileImagePath
                 LastLogon = $time
+                HasLoadTime = $hasLoadTime
             }
         }
 }
@@ -74,7 +78,13 @@ function Remove-OldDomainProfiles {
     )
 
     $cutoff = (Get-Date).AddDays(-$Days)
-    $targets = @(Get-DomainProfiles | Where-Object { $_.LastLogon -lt $cutoff } | Sort-Object LastLogon)
+    $allProfiles = @(Get-DomainProfiles)
+
+    foreach ($profile in ($allProfiles | Where-Object { -not $_.HasLoadTime })) {
+        Write-Host "$($profile.ProfilePath): no load time recorded, skipping (verify manually)" -ForegroundColor DarkYellow
+    }
+
+    $targets = @($allProfiles | Where-Object { $_.HasLoadTime -and $_.LastLogon -lt $cutoff } | Sort-Object LastLogon)
 
     if ($targets.Count -eq 0) {
         Write-Host "No profiles found older than $Days days." -ForegroundColor Green

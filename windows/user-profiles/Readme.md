@@ -11,21 +11,21 @@ Run these as LocalSystem or an elevated admin. `RemoveOneUserProfile.ps1` and `R
 A good run prints explicit `[SUCCESS]`/`[INFO]` lines and leaves the expected CSV files in `C:\Temp` where applicable. Failures print `[ERROR]` without killing your PowerShell session.
 
 ## GetUserListAsCsv.ps1
-- Purpose: Enumerate local non-special user profiles and export domain-matched profiles plus unresolved profiles.
+- Purpose: Enumerate local non-special user profiles, export domain-matched profiles, and export profiles whose SID could not be translated to an account.
 - Required inputs: Prompted domain short name (for example `CONTOSO`).
 - Assumptions: Run as LocalSystem/elevated admin; Windows PowerShell; WMI access to `Win32_UserProfile`.
-- File path behavior: Creates `C:\Temp` if missing; writes `C:\Temp\DomainUserProfiles.csv` and `C:\Temp\DisabledUsers.csv`.
+- File path behavior: Creates `C:\Temp` if missing; writes `C:\Temp\DomainUserProfiles.csv` and `C:\Temp\UnresolvedProfiles.csv`.
 - Key commands/functions: `Get-WmiObject Win32_UserProfile`, SID translation via .NET identity classes, `Export-Csv`.
-- Impact: Inventory/export only; no profile deletion.
-- Validation: Both CSV files are created; success output includes row counts.
+- Impact: Inventory/export only; no profile deletion. Profiles in `UnresolvedProfiles.csv` are a SID-translation hiccup, not a disabled-user determination; they are never queued for deletion by this pipeline and need manual review.
+- Validation: Both CSV files are created; success output includes row counts and a note when unresolved profiles need manual review.
 
 ## CheckCsvListForDisabledUsers.ps1
-- Purpose: Read exported domain user list and determine which users are disabled or unresolved in Active Directory.
+- Purpose: Read exported domain user list and determine which users are disabled or not found in Active Directory. This is the only script in the pipeline that writes `DisabledUsers.csv`.
 - Required inputs: No prompt; reads `C:\Temp\DomainUserProfiles.csv`.
 - Assumptions: Run as LocalSystem/elevated admin; Active Directory cmdlets available (`Get-ADUser`).
 - File path behavior: Creates `C:\Temp` if missing; reads `C:\Temp\DomainUserProfiles.csv`; writes `C:\Temp\DisabledUsers.csv`.
-- Key commands/functions: `Import-Csv`, `Get-ADUser`, `Export-Csv`.
-- Impact: Classification/export only; no profile deletion.
+- Key commands/functions: `Import-Csv`, `Get-ADUser -Filter`, `Export-Csv`.
+- Impact: Classification/export only; no profile deletion. Users not found in AD are classified NotFound and added to the disabled list; the AD filter escapes apostrophes in the username before matching.
 - Validation: Output CSV exists and summary line reports Enabled/Disabled/NotFound/Skipped counts.
 
 ## RemoveOneUserProfile.ps1
@@ -43,14 +43,14 @@ A good run prints explicit `[SUCCESS]`/`[INFO]` lines and leaves the expected CS
 - Assumptions: Run as **LocalSystem** or elevated admin; **ProfileList** timestamps are treated as an approximate “last use” signal (not identical to interactive logon auditing).
 - File path behavior: No CSV I/O; no `C:\Temp` requirement for this script.
 - Key commands/functions: `Read-Host`, `Get-ItemProperty` (ProfileList), `Get-CimInstance` / `Remove-CimInstance` (`Win32_UserProfile`), `Write-Progress`.
-- Impact: **Destructive** for confirmed profiles; removes local profile data and profile registry state for each successful CIM removal.
+- Impact: **Destructive** for confirmed profiles; removes local profile data and profile registry state for each successful CIM removal. Profiles with no recorded load time (which would otherwise resolve to year 1601 and always look "old") are excluded from the candidate list; each one prints a "no load time recorded, skipping (verify manually)" line instead.
 - Validation: Table of candidates prints before confirmation; per-path **Deleted** / **skipping** / **Failed** lines summarize the run.
 
 ## RemoveMultipleUserProfile.ps1
 - Purpose: Bulk remove local user profiles listed in `DisabledUsers.csv`.
-- Required inputs: No prompt; reads `C:\Temp\DisabledUsers.csv`.
+- Required inputs: No prompt; reads `C:\Temp\DisabledUsers.csv`. Prints the full list of profile paths it is about to remove and requires a **Y/N** confirmation before deleting anything.
 - Assumptions: Run as LocalSystem/elevated admin; CSV rows contain valid profile paths for intended removals.
 - File path behavior: Creates `C:\Temp` if missing; reads `C:\Temp\DisabledUsers.csv`; reports free space for drive `C:`.
 - Key commands/functions: `Import-Csv`, `Get-WmiObject Win32_UserProfile`, `.Delete()`, `Get-PSDrive`.
-- Impact: Destructive; permanently removes each matching profile path listed in the CSV.
-- Validation: Summary output reports Deleted/NotFound/Failed/Skipped counts and free-space line is printed.
+- Impact: Destructive; permanently removes each matching profile path listed in the CSV, but only after the operator confirms the printed list. Rows missing the `ProfilePath` column entirely are skipped with a warning instead of erroring under StrictMode.
+- Validation: Full profile list and confirmation prompt appear before any deletion; summary output reports Deleted/NotFound/Failed/Skipped counts and free-space line is printed.

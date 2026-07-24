@@ -3,9 +3,10 @@
     Exports all Entra ID / Microsoft 365 groups and direct members to a UTF-8 CSV under C:\Temp.
 .DESCRIPTION
     Requires Microsoft.Graph PowerShell SDK (see m365/README.md and docs/EXCEPTIONS_POLICY.md M365-GRAPH-MGSDK-001).
-    Prompts for CSV path (must be under C:\Temp), optional comma-separated Graph scopes, then Connect-MgGraph (browser
-    sign-in). Enumerates groups with Get-MgGroup, then Get-MgGroupMember per group (direct membership only). Creates
-    C:\Temp if missing. Runs entirely from prompts, so there is nothing to pass on the command line.
+    Prompts for CSV path (must be under C:\Temp), then Connect-MgGraph (browser sign-in) with Group.Read.All,
+    Directory.Read.All, and User.Read.All scopes. Enumerates groups with Get-MgGroup, then Get-MgGroupMember per group
+    (direct membership only). Creates C:\Temp if missing. Runs entirely from prompts, so there is nothing to pass on
+    the command line.
 #>
 
 Set-StrictMode -Version Latest
@@ -33,10 +34,7 @@ function Assert-MicrosoftGraphModuleAvailable {
 }
 
 function Ensure-TempDirectory {
-    $tempPath = 'C:\Temp'
-    if (-not (Test-Path -LiteralPath $tempPath)) {
-        New-Item -ItemType Directory -Path $tempPath -Force | Out-Null
-    }
+    $null = New-Item -Path 'C:\Temp' -ItemType Directory -Force
 }
 
 function Resolve-OutputCsvPath {
@@ -58,28 +56,6 @@ function Resolve-OutputCsvPath {
     }
 
     return $full
-}
-
-function Read-GraphScopes {
-    $defaultScopes = @('Group.Read.All', 'Directory.Read.All', 'User.Read.All')
-    $defaultText = $defaultScopes -join ', '
-    Write-Host "Default Graph scopes: $defaultText"
-    $raw = Read-Host -Prompt 'Scopes (comma-separated) [Enter for defaults]'
-    if ([string]::IsNullOrWhiteSpace($raw)) {
-        return $defaultScopes
-    }
-
-    $parsed = @(
-        $raw.Split(',') |
-            ForEach-Object { $_.Trim() } |
-            Where-Object { -not [string]::IsNullOrWhiteSpace($_) }
-    )
-
-    if ($parsed.Count -eq 0) {
-        return $defaultScopes
-    }
-
-    return $parsed
 }
 
 function Get-GroupTypeString {
@@ -179,19 +155,11 @@ function Invoke-Main {
     }
 
     $outputPath = Resolve-OutputCsvPath -DefaultFileName 'M365-Groups-And-Members.csv'
-    $scopes = Read-GraphScopes
 
     Write-Host 'Signing in to Microsoft Graph...' -ForegroundColor Cyan
-    Connect-MgGraph -Scopes $scopes | Out-Null
+    Connect-MgGraph -Scopes 'Group.Read.All', 'Directory.Read.All', 'User.Read.All' | Out-Null
 
     try {
-        try {
-            Select-MgProfile -Name 'v1.0' -ErrorAction Stop
-        }
-        catch {
-            Write-Warning "Select-MgProfile v1.0 skipped: $($_.Exception.Message)"
-        }
-
         Write-Host 'Retrieving groups...' -ForegroundColor Cyan
         $allGroups = @(Get-MgGroup -All -Property 'id,displayName,groupTypes,securityEnabled,mailEnabled,mail')
         $total = $allGroups.Count

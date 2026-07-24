@@ -47,15 +47,10 @@ function Remove-FilesSafely {
     }
 
     try {
-        $items = Get-ChildItem -LiteralPath $Path -Recurse -Force -ErrorAction SilentlyContinue
-        $count = ($items | Measure-Object).Count
-
-        if ($count -gt 0) {
-            Write-Output "Cleaning: $Description"
-            $wildcard = Join-Path $Path '*'
-            Remove-Item -Path $wildcard -Recurse -Force -ErrorAction SilentlyContinue
-            Write-Output "  Removed $count item(s) under $Path"
-        }
+        Write-Output "Cleaning: $Description"
+        $wildcard = Join-Path $Path '*'
+        Remove-Item -Path $wildcard -Recurse -Force -ErrorAction SilentlyContinue
+        Write-Output "  Cleaned: $Path"
     }
     catch {
         Write-Warning "Could not clean: $Path - $($_.Exception.Message)"
@@ -71,10 +66,6 @@ function Invoke-DismWithExitCheck {
     )
 
     $dism = Join-Path $env:SystemRoot 'System32\Dism.exe'
-    if (-not (Test-Path -LiteralPath $dism)) {
-        Write-Warning "DISM not found at $dism; skipping $StepName."
-        return
-    }
 
     $proc = Start-Process -FilePath $dism -ArgumentList $ArgumentList -Wait -NoNewWindow -PassThru
     if ($proc.ExitCode -ne 0) {
@@ -102,10 +93,6 @@ function Remove-RecycleBinItem {
     # -Recurse to hang. Mirror an empty directory into the target first to wipe
     # its contents via robocopy (which handles long paths natively), then remove
     # the resulting empty directory. The SID folder itself is never touched here.
-    if (-not (Test-Path -LiteralPath $EmptyDir)) {
-        New-Item -ItemType Directory -Path $EmptyDir -Force | Out-Null
-    }
-
     $proc = Start-Process -FilePath 'robocopy.exe' `
         -ArgumentList @($EmptyDir, $Item.FullName, '/MIR', '/R:1', '/W:0', '/NFL', '/NDL', '/NJH', '/NJS') `
         -Wait -NoNewWindow -PassThru
@@ -127,31 +114,35 @@ function Clear-AllRecycleBin {
         return
     }
 
-    $emptyDir = 'C:\empty'
+    $null = New-Item -Path 'C:\Temp' -ItemType Directory -Force
+    $emptyDir = Join-Path 'C:\Temp' ('DiskCleanup_' + [Guid]::NewGuid().ToString('N'))
+    New-Item -ItemType Directory -Path $emptyDir -Force | Out-Null
+
     $sidFolders = Get-ChildItem -LiteralPath $binRoot -Force -Directory -ErrorAction SilentlyContinue |
         Where-Object { $_.Name -like 'S-1-5-*' }
 
     $touched = $false
-    foreach ($sidFolder in $sidFolders) {
-        try {
-            $items = Get-ChildItem -LiteralPath $sidFolder.FullName -Force -ErrorAction SilentlyContinue |
-                Where-Object { $_.Name -ne 'desktop.ini' }
-            $count = ($items | Measure-Object).Count
-            if ($count -gt 0) {
-                foreach ($item in $items) {
-                    Remove-RecycleBinItem -Item $item -EmptyDir $emptyDir
+    try {
+        foreach ($sidFolder in $sidFolders) {
+            try {
+                $items = Get-ChildItem -LiteralPath $sidFolder.FullName -Force -ErrorAction SilentlyContinue |
+                    Where-Object { $_.Name -ne 'desktop.ini' }
+                $count = ($items | Measure-Object).Count
+                if ($count -gt 0) {
+                    foreach ($item in $items) {
+                        Remove-RecycleBinItem -Item $item -EmptyDir $emptyDir
+                    }
+                    $touched = $true
+                    Write-Output "  Removed $count item(s) under $($sidFolder.FullName)"
                 }
-                $touched = $true
-                Write-Output "  Removed $count item(s) under $($sidFolder.FullName)"
+            }
+            catch {
+                Write-Warning "Could not clear $($sidFolder.FullName) - $($_.Exception.Message)"
             }
         }
-        catch {
-            Write-Warning "Could not clear $($sidFolder.FullName) - $($_.Exception.Message)"
-        }
     }
-
-    if (Test-Path -LiteralPath $emptyDir) {
-        Remove-Item -LiteralPath $emptyDir -Force -ErrorAction SilentlyContinue
+    finally {
+        Remove-Item -LiteralPath $emptyDir -Recurse -Force -ErrorAction SilentlyContinue
     }
 
     if (-not $touched) {
@@ -279,9 +270,7 @@ function Invoke-Main {
         Remove-FilesSafely -Path $tempPath -Description 'Current user Temp folder'
     }
 
-    if (-not (Test-Path -LiteralPath 'C:\Temp')) {
-        New-Item -ItemType Directory -Path 'C:\Temp' -Force | Out-Null
-    }
+    $null = New-Item -Path 'C:\Temp' -ItemType Directory -Force
     Remove-FilesSafely -Path 'C:\Temp' -Description 'C:\Temp folder'
 
     Clear-AllRecycleBin

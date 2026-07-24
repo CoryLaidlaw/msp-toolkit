@@ -2,9 +2,10 @@
 .SYNOPSIS
     Bulk removes local user profiles listed in DisabledUsers.csv.
 .DESCRIPTION
-    Reads C:\Temp\DisabledUsers.csv, validates input rows, deletes matching Win32_UserProfile entries,
-    and reports deleted/not-found/failed/skipped counts. Intended for elevated admin or LocalSystem
-    execution and prints C: free-space status when complete.
+    Reads C:\Temp\DisabledUsers.csv, validates input rows, lists every profile path it is about to
+    remove, requires a Y/N confirmation, then deletes matching Win32_UserProfile entries and reports
+    deleted/not-found/failed/skipped counts. Intended for elevated admin or LocalSystem execution and
+    prints C: free-space status when complete.
 #>
 
 Set-StrictMode -Version Latest
@@ -15,6 +16,19 @@ function Ensure-TempDirectory {
     if (-not (Test-Path -Path $tempPath)) {
         New-Item -Path $tempPath -ItemType Directory -Force | Out-Null
     }
+}
+
+function Test-ReadHostYes {
+    param(
+        [Parameter(Mandatory)]
+        [string]$Prompt
+    )
+
+    $response = Read-Host -Prompt $Prompt
+    if ([string]::IsNullOrWhiteSpace($response)) {
+        return $false
+    }
+    return ($response.Trim() -match '^(?i:y|yes)$')
 }
 
 function Show-FreeSpace {
@@ -40,25 +54,49 @@ function Invoke-Main {
     $failedCount = 0
     $skippedCount = 0
 
-    foreach ($user in $userProfiles) {
-        $profilePath = $null
-        if (-not [string]::IsNullOrWhiteSpace($user.ProfilePath)) {
-            $profilePath = $user.ProfilePath
-        }
-        elseif (-not [string]::IsNullOrWhiteSpace($user.Profilepath)) {
-            $profilePath = $user.Profilepath
-        }
+    $rowsToRemove = @()
 
+    foreach ($user in $userProfiles) {
         $username = $user.Username
         if ([string]::IsNullOrWhiteSpace($username)) {
             $username = '<unknown>'
         }
+
+        if ($null -eq $user.PSObject.Properties['ProfilePath']) {
+            Write-Output "[WARN] Skipping row for '$username' because the CSV has no ProfilePath column."
+            $skippedCount++
+            continue
+        }
+
+        $profilePath = $user.ProfilePath
 
         if ([string]::IsNullOrWhiteSpace($profilePath) -or $profilePath -notlike 'C:\Users\*') {
             Write-Output "[WARN] Skipping row for '$username' due to missing/invalid ProfilePath."
             $skippedCount++
             continue
         }
+
+        $rowsToRemove += [PSCustomObject]@{ Username = $username; ProfilePath = $profilePath }
+    }
+
+    if ($rowsToRemove.Count -eq 0) {
+        Write-Output '[INFO] No valid profiles to remove after validation.'
+        Write-Output "[INFO] Summary: Deleted=$deletedCount NotFound=$notFoundCount Failed=$failedCount Skipped=$skippedCount"
+        return
+    }
+
+    Write-Host ""
+    Write-Host "Profiles flagged for removal ($($rowsToRemove.Count)):`n" -ForegroundColor Yellow
+    $rowsToRemove | Format-Table -Property Username, ProfilePath -AutoSize
+
+    if (-not (Test-ReadHostYes -Prompt "Delete these $($rowsToRemove.Count) profile(s)? (Y/N)")) {
+        Write-Host 'Cancelled. No profiles were deleted.' -ForegroundColor Cyan
+        return
+    }
+
+    foreach ($row in $rowsToRemove) {
+        $username = $row.Username
+        $profilePath = $row.ProfilePath
 
         Write-Output "[INFO] Attempting to remove profile for user '$username' at path '$profilePath'."
 
@@ -85,15 +123,10 @@ function Invoke-Main {
     Write-Output "[SUCCESS] RemoveMultipleUserProfile.ps1 completed."
     Write-Output "[INFO] Summary: Deleted=$deletedCount NotFound=$notFoundCount Failed=$failedCount Skipped=$skippedCount"
     Show-FreeSpace
-    return 0
 }
 
 try {
-    $statusCode = Invoke-Main
-    if ($statusCode -ne 0) {
-        Write-Error "[ERROR] RemoveMultipleUserProfile completed with status code $statusCode."
-        return
-    }
+    Invoke-Main
 }
 catch {
     Write-Error "[ERROR] $($_.Exception.Message)"

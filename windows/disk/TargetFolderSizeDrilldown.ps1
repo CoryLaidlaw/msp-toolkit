@@ -21,16 +21,6 @@ function Get-FolderSize {
     return 0
 }
 
-function Write-Progress-Line {
-    param([string]$Message)
-    $padded = $Message.PadRight(120)
-    Write-Host "`r$padded" -NoNewline -ForegroundColor DarkCyan
-}
-
-function Clear-Progress-Line {
-    Write-Host "`r$(' ' * 120)`r" -NoNewline
-}
-
 function Show-FolderTree {
     param(
         [string]$Path,
@@ -44,7 +34,7 @@ function Show-FolderTree {
     if (-not $subFolders) { return }
 
     $children = @(foreach ($folder in $subFolders) {
-        Write-Progress-Line "[Scanning] $($folder.FullName)"
+        Write-Progress -Activity 'Scanning folders' -Status $folder.FullName
         $sizeBytes = Get-FolderSize -Path $folder.FullName
         $sizeGB = [Math]::Round($sizeBytes / 1GB, 2)
         $pct = if ($ParentSizeBytes -gt 0) {
@@ -60,7 +50,7 @@ function Show-FolderTree {
         }
     })
 
-    Clear-Progress-Line
+    Write-Progress -Activity 'Scanning folders' -Completed
 
     $avgPct = if ($children.Count -gt 0) {
         ($children | Measure-Object -Property PctOfParent -Average).Average
@@ -114,12 +104,14 @@ function Read-TargetPath {
     return $raw.Trim()
 }
 
-function Read-PositiveDecimal {
+function Read-DecimalWithMinimum {
     param(
         [Parameter(Mandatory)]
         [string]$Prompt,
         [Parameter(Mandatory)]
-        [decimal]$Default
+        [decimal]$Default,
+        [Parameter(Mandatory)]
+        [decimal]$Minimum
     )
 
     do {
@@ -128,31 +120,10 @@ function Read-PositiveDecimal {
             return $Default
         }
         $value = [decimal]0
-        if ([decimal]::TryParse($raw.Trim(), [ref]$value) -and $value -gt 0) {
+        if ([decimal]::TryParse($raw.Trim(), [ref]$value) -and $value -ge $Minimum) {
             return $value
         }
-        Write-Host "Invalid number. Enter a positive value or press Enter for default ($Default)." -ForegroundColor Red
-    } while ($true)
-}
-
-function Read-NonNegativeDecimal {
-    param(
-        [Parameter(Mandatory)]
-        [string]$Prompt,
-        [Parameter(Mandatory)]
-        [decimal]$Default
-    )
-
-    do {
-        $raw = Read-Host -Prompt $Prompt
-        if ([string]::IsNullOrWhiteSpace($raw)) {
-            return $Default
-        }
-        $value = [decimal]0
-        if ([decimal]::TryParse($raw.Trim(), [ref]$value) -and $value -ge 0) {
-            return $value
-        }
-        Write-Host "Invalid number. Enter zero or a positive value, or press Enter for default ($Default)." -ForegroundColor Red
+        Write-Host "Invalid number. Enter a value of at least $Minimum, or press Enter for default ($Default)." -ForegroundColor Red
     } while ($true)
 }
 
@@ -164,8 +135,8 @@ function Invoke-Main {
         return 1
     }
 
-    $script:SizeThresholdGB = [double](Read-PositiveDecimal -Prompt 'Minimum child size to consider for expansion, in GB [default: 10]' -Default 10)
-    $script:DominanceGap = [double](Read-NonNegativeDecimal -Prompt 'Percentage points above average sibling share required to expand [default: 10]' -Default 10)
+    $script:SizeThresholdGB = [double](Read-DecimalWithMinimum -Prompt 'Minimum child size to consider for expansion, in GB [default: 10]' -Default 10 -Minimum 0)
+    $script:DominanceGap = [double](Read-DecimalWithMinimum -Prompt 'Percentage points above average sibling share required to expand [default: 10]' -Default 10 -Minimum 0)
 
     $Script:TreeNodes = [System.Collections.Generic.List[PSCustomObject]]::new()
 
@@ -177,10 +148,10 @@ function Invoke-Main {
     Write-Host "============================================================" -ForegroundColor Cyan
     Write-Host ""
 
-    Write-Progress-Line "[Scanning] $TargetPath (root total)..."
+    Write-Progress -Activity 'Scanning folders' -Status "$TargetPath (root total)"
     $rootSizeBytes = Get-FolderSize -Path $TargetPath
     $rootSizeGB = [Math]::Round($rootSizeBytes / 1GB, 2)
-    Clear-Progress-Line
+    Write-Progress -Activity 'Scanning folders' -Completed
 
     Write-Host "[Root] $TargetPath  -  $rootSizeGB GB total" -ForegroundColor Green
     Write-Host ""

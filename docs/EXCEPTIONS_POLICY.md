@@ -97,9 +97,26 @@ Maintainers MUST review each entry on or before its **Expiry date** and renew, n
 | **Expiry date** | 2027-04-25 |
 | **Cleanup / rollback** | Replace with Rest-only or different SDK when feasible; narrow or remove this exception entry |
 
+### WIN-AD-RSAT-001: ActiveDirectory RSAT module for Windows AD scripts
+
+| Field | Value |
+|------|--------|
+| **Standard** | `docs/POWERSHELL_SCRIPT_STANDARDS.md`: Dependency Rules |
+| **Waived rule** | Scripts MUST NOT require importing non-default modules |
+| **Scope** | AD-dependent scripts under `windows/onboarding/` and `windows/user-profiles/` that call ActiveDirectory cmdlets |
+| **Reason** | These scripts manage and query on-premises Active Directory, which requires the Microsoft ActiveDirectory RSAT module not included on a default Windows 11 installation |
+| **Risk** | Missing or incompatible RSAT installation prevents execution; module version drift |
+| **Mitigation** | Each dependent script checks for the module and emits a clear guarded error; install RSAT Active Directory tools only on authorized technician endpoints and keep Windows updated |
+| **Owner** | Repository maintainers |
+| **Approval authority** | Repository maintainers (recorded at integration) |
+| **Start date** | 2026-07-23 |
+| **Expiry date** | 2027-07-23 |
+| **Cleanup / rollback** | Replace with a supported module-free approach if one becomes practical; otherwise renew with updated risk review |
+
 ## Change Log
 
 - 2026-04-25: Scoped M365-SPO-PNP-001 and M365-GRAPH-MGSDK-001 to scripts in `m365/` root (subfolders removed).
+- 2026-07-23: Added active exception WIN-AD-RSAT-001 (ActiveDirectory RSAT module for scoped Windows AD scripts).
 - 2026-04-25: Added active exception M365-GRAPH-MGSDK-001 (Microsoft.Graph SDK for `m365/`).
 - 2026-04-25: Added active exception M365-SPO-PNP-001 (PnP.PowerShell for `m365/`).
 - 2026-04-24: Initial exceptions policy created.

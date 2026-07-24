@@ -3,8 +3,9 @@
     Exports local domain profile inventory and unresolved profiles to CSV.
 .DESCRIPTION
     Prompts for the domain short name, enumerates local non-special user profiles, resolves SID-to-account
-    mappings, and writes matched and unresolved results to CSV files under C:\Temp. It asks for anything
-    it needs at the prompt and prints a clear success or error message when it finishes.
+    mappings, and writes matched profiles and unresolved (SID translation failed) profiles to separate CSV
+    files under C:\Temp. Unresolved profiles are NOT queued for deletion; they need manual review. It asks
+    for anything it needs at the prompt and prints a clear success or error message when it finishes.
 #>
 
 Set-StrictMode -Version Latest
@@ -70,22 +71,20 @@ function Invoke-Main {
     }
 
     $matchedPath = 'C:\Temp\DomainUserProfiles.csv'
-    $unresolvedPath = 'C:\Temp\DisabledUsers.csv'
+    $unresolvedPath = 'C:\Temp\UnresolvedProfiles.csv'
 
     $matchedProfiles | Export-Csv -Path $matchedPath -NoTypeInformation
     $unresolvedProfiles | Export-Csv -Path $unresolvedPath -NoTypeInformation
 
     Write-Output "[SUCCESS] Exported $($matchedProfiles.Count) domain profiles for '$targetDomain' to $matchedPath"
     Write-Output "[SUCCESS] Exported $($unresolvedProfiles.Count) unresolved profiles to $unresolvedPath"
-    return 0
+    if ($unresolvedProfiles.Count -gt 0) {
+        Write-Output "[NOTE] Unresolved profiles need manual review and are NOT queued for deletion by the disabled-user pipeline."
+    }
 }
 
 try {
-    $statusCode = Invoke-Main
-    if ($statusCode -ne 0) {
-        Write-Error "[ERROR] GetUserListAsCsv completed with status code $statusCode."
-        return
-    }
+    Invoke-Main
 }
 catch {
     Write-Error "[ERROR] $($_.Exception.Message)"

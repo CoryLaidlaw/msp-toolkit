@@ -149,12 +149,13 @@ function Show-InstalledPrinters {
     Write-Host 'Installed printers (Rename/Delete spooler):' -ForegroundColor Yellow
     if ($printers.Count -eq 0) {
         Write-Host '  (none found)' -ForegroundColor DarkYellow
-        return
+        return @()
     }
 
     for ($i = 0; $i -lt $printers.Count; $i++) {
         Write-Host ("[{0}] {1}" -f ($i + 1), $printers[$i].Name)
     }
+    return $printers
 }
 
 function Convert-SelectionTextToIndexes {
@@ -221,10 +222,35 @@ function Read-PrinterSelectionIndexes {
 }
 
 function Ensure-TempDirectory {
-    $tempPath = 'C:\Temp'
-    if (-not (Test-Path -LiteralPath $tempPath)) {
-        New-Item -Path $tempPath -ItemType Directory -Force | Out-Null
+    $null = New-Item -Path 'C:\Temp' -ItemType Directory -Force
+}
+
+function Test-UserContext {
+    param(
+        [Parameter(Mandatory)]
+        [string]$TargetSid
+    )
+
+    $runningSid = [System.Security.Principal.WindowsIdentity]::GetCurrent().User.Value
+
+    if ($runningSid -eq 'S-1-5-18') {
+        Write-Warning 'Running as LocalSystem (SYSTEM). Per-user connections are meaningless for SYSTEM.'
+        Write-Warning 'Network-mapped add/remove actions are blocked.'
+        return $false
     }
+
+    if ($runningSid -ne $TargetSid) {
+        Write-Warning 'The running account SID differs from the target user SID.'
+        Write-Warning "Running SID: $runningSid"
+        Write-Warning "Target SID:  $TargetSid"
+        Write-Warning 'Per-user add/remove operations will apply to the running account context, not the target user profile.'
+        if (-not (Test-ReadHostYes -Prompt 'Do you want to proceed with this operation? (Y/N)')) {
+            Write-Host 'Operation cancelled.' -ForegroundColor Cyan
+            return $false
+        }
+    }
+
+    return $true
 }
 
 function Read-CsvPathUnderTemp {
@@ -439,6 +465,12 @@ function Invoke-AddAction {
     Write-Host '  [2] Local/IP printer'
     $typeChoice = Read-MenuChoice -Prompt 'Choose add type (1-2)' -AllowedChoices @('1', '2')
 
+    if ($typeChoice -eq '1') {
+        if (-not (Test-UserContext -TargetSid $targetContext.Sid)) {
+            return
+        }
+    }
+
     Write-Host '  [1] Manual'
     Write-Host '  [2] CSV'
     $modeChoice = Read-MenuChoice -Prompt 'Choose add mode (1-2)' -AllowedChoices @('1', '2')
@@ -504,6 +536,10 @@ function Invoke-DeleteAction {
         }
 
         Write-Host "Installed printer removal complete. Success: $ok  Failed: $fail  Skipped: $skip" -ForegroundColor Cyan
+        return
+    }
+
+    if (-not (Test-UserContext -TargetSid $targetContext.Sid)) {
         return
     }
 
@@ -584,16 +620,9 @@ function Invoke-RenameActionCsv {
 }
 
 function Invoke-RenameActionInteractive {
-    $printers = @(Get-Printer -ErrorAction SilentlyContinue | Sort-Object -Property Name)
+    $printers = @(Show-InstalledPrinters)
     if ($printers.Count -eq 0) {
-        Write-Host 'No installed printers available to rename.' -ForegroundColor Yellow
         return
-    }
-
-    Write-Host ''
-    Write-Host 'Installed printers:' -ForegroundColor Yellow
-    for ($i = 0; $i -lt $printers.Count; $i++) {
-        Write-Host ("[{0}] {1}" -f ($i + 1), $printers[$i].Name)
     }
 
     $choice = [int](Read-MenuChoice -Prompt "Choose printer to rename (1-$($printers.Count))" -AllowedChoices (1..$printers.Count | ForEach-Object { "$_" }))
@@ -654,7 +683,7 @@ function Invoke-Main {
     while ($true) {
         $mappedPrinters = @(Get-PrinterConnectionsForSid -Sid $targetContext.Sid)
         Show-MappedPrinterConnections -Printers $mappedPrinters
-        Show-InstalledPrinters
+        $null = Show-InstalledPrinters
 
         Write-Host ''
         Write-Host 'Actions:' -ForegroundColor Yellow

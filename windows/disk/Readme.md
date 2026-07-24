@@ -40,6 +40,7 @@ When elevated and not running as LocalSystem, **cleanmgr** runs automatically af
 
 - Ensures **`C:\Temp` exists**, then deletes its contents (not the folder itself).
 - Clears **`C:\Windows\Temp`**, **recycle bin**, **WER** report queue/archive, **`C:\Windows\Downloaded Program Files`**, and **IIS logs** if `C:\inetpub\logs\LogFiles` exists.
+- Recycle bin clearing stages a **unique empty folder under `C:\Temp`** (`C:\Temp\DiskCleanup_<guid>`) for the robocopy mirror wipe, created before and removed after each run.
 - When elevated: **Windows Update** download cache, **Prefetch**, **Delivery Optimization** cache.
 - When elevated: **cleanmgr** `/sagerun` as above.
 - When elevated: **DISM** `/AnalyzeComponentStore` and `/StartComponentCleanup` with **`/ResetBase`** (irreversible servicing-store reduction; see Microsoft DISM guidance).
@@ -47,7 +48,7 @@ When elevated and not running as LocalSystem, **cleanmgr** runs automatically af
 
 **Commands and APIs used:** `Get-PSDrive`, `Get-ChildItem`, `Remove-Item` (including a direct `C:\$Recycle.Bin` sweep), `New-Item`, `Start-Process` (`cleanmgr.exe`, `Dism.exe`), `Set-ItemProperty` (VolumeCaches for cleanmgr), `Read-Host`.
 
-**File path behavior:** Creates `C:\Temp` if missing; deletes contents of `C:\Temp`; also clears additional fixed cleanup targets (`C:\Windows\Temp`, WER queues, IIS logs when present, and other documented paths).
+**File path behavior:** Creates `C:\Temp` if missing; deletes contents of `C:\Temp`; also clears additional fixed cleanup targets (`C:\Windows\Temp`, WER queues, IIS logs when present, and other documented paths). Recycle bin clearing creates a unique staging subfolder under `C:\Temp` and removes it when done.
 
 **Safety / impact:**
 
@@ -67,7 +68,7 @@ When elevated and not running as LocalSystem, **cleanmgr** runs automatically af
 **Operator inputs** (prompted at run time, no parameters):
 
 1. **`Folder path to analyze [default: C:\Users]`**: target root. Press **Enter** to use `C:\Users`. Must exist and be a **folder**; otherwise the script prints an error and exits with code **1**.
-2. **`Minimum child size to consider for expansion, in GB [default: 10]`**: child must be **strictly greater** than this value (in GB) to qualify for expansion. Press **Enter** for **10**. Non-positive or non-numeric input is rejected until valid or Enter for default.
+2. **`Minimum child size to consider for expansion, in GB [default: 10]`**: child must be **strictly greater** than this value (in GB) to qualify for expansion. Press **Enter** for **10**. Zero or a positive number; negative or non-numeric input is rejected until valid, or press Enter for the default. Enter 0 for no size floor.
 3. **`Percentage points above average sibling share required to expand [default: 10]`**: let `avg` be the average of each child’s **% of parent** among immediate siblings. A child qualifies only if `(child % of parent - avg)` is **strictly greater** than this number. Press **Enter** for **10**. Enter **0** to require only “above average” (still combined with the size threshold). Invalid input is rejected until valid or Enter for default.
 
 **What it does (summary):**
@@ -252,19 +253,18 @@ When elevated and not running as LocalSystem, **cleanmgr** runs automatically af
 
 ## PageFileSizeCheck.ps1
 
-**Purpose:** **Read-only** check: reports the active, configured, and on-disk state of **`C:\pagefile.sys`**.
+**Purpose:** **Read-only** check: reports the active and configured state of **`C:\pagefile.sys`** (allocated/current/peak usage and configured initial/maximum sizes).
 
-**Execution context:** Works best **elevated**; without elevation the on-disk size probe can fail (CIM data still reports).
+**Execution context:** Works best **elevated**; CIM queries can return less data without elevation.
 
 **Operator inputs:** **None** (always checks **`C:\pagefile.sys`**).
 
 **What it does (summary):**
 
 - Queries CIM (**`Win32_PageFileUsage`**, **`Win32_PageFileSetting`**, **`Win32_ComputerSystem`**) for allocated/current/peak usage, configured sizes, and whether automatic management is on. CIM is used because the OS holds `pagefile.sys` with an exclusive handle, so the FileSystem provider can report it as missing.
-- Best-effort **`[System.IO.FileInfo]`** probe prints on-disk size in GB and bytes when readable.
 - If nothing reports, prints a not-found note and suggests rerunning elevated.
 
-**Commands and APIs used:** `Get-CimInstance`, `[System.IO.FileInfo]`.
+**Commands and APIs used:** `Get-CimInstance`.
 
 **Safety / impact:** **None** (read-only). Changes nothing.
 

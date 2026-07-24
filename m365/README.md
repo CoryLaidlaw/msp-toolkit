@@ -55,9 +55,8 @@ Install-Module Microsoft.Graph -Scope CurrentUser
 - Required operator inputs:
   - Continue prompt
   - CSV output path under `C:\Temp` (default `C:\Temp\M365-Groups-And-Members.csv`)
-  - Optional scopes (defaults: `Group.Read.All`, `Directory.Read.All`, `User.Read.All`)
-- Assumptions: Interactive Windows PowerShell session with `Microsoft.Graph` available and permissions granted for requested scopes.
+- Assumptions: Interactive Windows PowerShell session with `Microsoft.Graph` available and permissions granted for Group.Read.All, Directory.Read.All, and User.Read.All scopes.
 - File path behavior: Creates `C:\Temp` if missing; output CSV must resolve under `C:\Temp`.
-- Key commands/functions used: `Import-Module Microsoft.Graph`, `Connect-MgGraph`, `Select-MgProfile`, `Get-MgGroup`, `Get-MgGroupMember`, `Export-Csv`, `Disconnect-MgGraph`.
+- Key commands/functions used: `Import-Module Microsoft.Graph`, `Connect-MgGraph`, `Get-MgGroup`, `Get-MgGroupMember`, `Export-Csv`, `Disconnect-MgGraph`.
 - Potential impact: Directory read activity only; no object mutation, but may produce large CSV output for large tenants.
 - Validation signals: Console prints completion message with saved path; if no groups are found an empty CSV is still written.

@@ -58,6 +58,7 @@ Scripts for **network discovery, NIC power management, and user-context mapping 
 
 - **Destructive actions exist** for mapped drives (add/remove drive mappings).
 - Scope is **current loaded user context** only; no multi-user operation.
+- **Context warnings and blocks:** When the running account SID differs from the target user SID, the operator must confirm the action before proceeding. When running as LocalSystem (SYSTEM), network-mapped add and remove actions are blocked entirely because per-user connections are not applicable for the SYSTEM account.
 
 **Execution context:** Elevated technician/admin session is recommended for reliable context resolution and mapping visibility.
 
@@ -100,6 +101,7 @@ Template starters are available under `data/templates`:
 - **Scope:** Targets the resolved current user SID only; there is no multi-user selection loop.
 - **Offline users:** Only **currently loaded** hives are eligible; profiles not loaded in this session are not processed.
 - **Privilege requirements:** local/IP add and rename operations can require elevated rights and installed drivers.
+- **Context warnings and blocks:** When the running account SID differs from the target user SID, network-mapped printer connections cannot be modified without explicit confirmation. Under LocalSystem (SYSTEM), network-mapped add and remove actions are blocked entirely, while local/IP printer operations and read-only display remain available.
 
 **Execution context:** **Elevated Administrator** or technician session recommended so all relevant hives are visible.
 

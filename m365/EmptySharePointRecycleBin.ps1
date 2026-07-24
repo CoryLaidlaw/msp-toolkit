@@ -105,10 +105,6 @@ function Invoke-Main {
         throw "Could not connect to SharePoint admin: $($_.Exception.Message)"
     }
 
-    if ($null -eq $adminConnection) {
-        throw 'Connect-PnPOnline did not return a connection object.'
-    }
-
     Write-Host 'Retrieving all SharePoint sites...' -ForegroundColor Cyan
     $sites = @(Get-PnPTenantSite -Connection $adminConnection)
     $siteCount = $sites.Count

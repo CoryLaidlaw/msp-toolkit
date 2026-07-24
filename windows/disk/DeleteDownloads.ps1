@@ -37,11 +37,23 @@ function Read-UsersRootPath {
 }
 
 function Invoke-Main {
-    param(
-        [Parameter(Mandatory)]
-        [string]$UsersRootPath
-    )
+    # --- Input collection ---
+    if (-not (Test-IsAdministrator)) {
+        Write-Warning 'Not running elevated: clearing other users'' Downloads may fail due to permissions.'
+    }
 
+    $UsersRootPath = Read-UsersRootPath
+
+    Write-Host "This will delete ALL files and folders inside each profile's Downloads folder under:"
+    Write-Host "  $UsersRootPath"
+    Write-Host ""
+
+    if (-not (Test-ReadHostYes -Prompt 'Continue with Downloads cleanup? (Y/N)')) {
+        Write-Host 'Aborted by operator.'
+        return 0
+    }
+
+    # --- Main execution ---
     if (-not (Test-Path -LiteralPath $UsersRootPath -PathType Container)) {
         Write-Host "[ERROR] Users root not found or not a folder: $UsersRootPath" -ForegroundColor Red
         return 1
@@ -99,24 +111,8 @@ function Invoke-Main {
     return 0
 }
 
-# --- Input collection ---
-if (-not (Test-IsAdministrator)) {
-    Write-Warning 'Not running elevated: clearing other users'' Downloads may fail due to permissions.'
-}
-
-$usersRoot = Read-UsersRootPath
-
-Write-Host "This will delete ALL files and folders inside each profile's Downloads folder under:"
-Write-Host "  $usersRoot"
-Write-Host ""
-
-if (-not (Test-ReadHostYes -Prompt 'Continue with Downloads cleanup? (Y/N)')) {
-    Write-Host 'Aborted by operator.'
-    return
-}
-
 try {
-    $statusCode = Invoke-Main -UsersRootPath $usersRoot
+    $statusCode = Invoke-Main
     if ($statusCode -ne 0) {
         Write-Error "[ERROR] DeleteDownloads completed with status code $statusCode."
         return

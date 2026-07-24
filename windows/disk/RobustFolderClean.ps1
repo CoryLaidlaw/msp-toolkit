@@ -13,9 +13,7 @@ $ErrorActionPreference = 'Stop'
 $script:TempRoot = 'C:\Temp'
 
 function Ensure-TempRoot {
-    if (-not (Test-Path -LiteralPath $script:TempRoot -PathType Container)) {
-        New-Item -ItemType Directory -Path $script:TempRoot -Force | Out-Null
-    }
+    $null = New-Item -Path $script:TempRoot -ItemType Directory -Force
 }
 
 function New-RobocopyStagingFolder {
@@ -24,17 +22,6 @@ function New-RobocopyStagingFolder {
     $staging = Join-Path -Path $script:TempRoot -ChildPath $stagingName
     New-Item -ItemType Directory -Path $staging -Force | Out-Null
     return $staging
-}
-
-function Remove-RobocopyStagingFolder {
-    param(
-        [Parameter(Mandatory)]
-        [string]$StagingPath
-    )
-
-    if (Test-Path -LiteralPath $StagingPath) {
-        Remove-Item -LiteralPath $StagingPath -Recurse -Force -ErrorAction Stop
-    }
 }
 
 function Invoke-RobocopyMirrorEmpty {
@@ -46,9 +33,6 @@ function Invoke-RobocopyMirrorEmpty {
     )
 
     $robocopy = Join-Path $env:SystemRoot 'System32\robocopy.exe'
-    if (-not (Test-Path -LiteralPath $robocopy)) {
-        throw "robocopy.exe not found at $robocopy"
-    }
 
     # Trim trailing backslashes: robocopy mis-parses quoted paths ending in '\'
     # (e.g. "C:\foo\" becomes C:\foo" to its argv parser).
@@ -61,14 +45,6 @@ function Invoke-RobocopyMirrorEmpty {
     # otherwise be an Object[] of [stdout lines + exit code]).
     & $robocopy @robocopyArgs | Out-Host
     return $LASTEXITCODE
-}
-
-function Test-RobocopySuccess {
-    param(
-        [Parameter(Mandatory)]
-        [int]$ExitCode
-    )
-    return ($ExitCode -ge 0 -and $ExitCode -le 7)
 }
 
 function Read-TargetFolderPath {
@@ -103,7 +79,7 @@ function Invoke-Main {
         Write-Host "Running robocopy mirror (empty -> target)..."
         $code = Invoke-RobocopyMirrorEmpty -EmptySource $staging -TargetPath $targetPath
 
-        if (-not (Test-RobocopySuccess -ExitCode $code)) {
+        if ($code -lt 0 -or $code -gt 7) {
             Write-Host "[ERROR] robocopy exited with code $code (treat as failure)." -ForegroundColor Red
             return 1
         }
@@ -119,7 +95,7 @@ function Invoke-Main {
     finally {
         if ($staging) {
             try {
-                Remove-RobocopyStagingFolder -StagingPath $staging
+                Remove-Item -LiteralPath $staging -Recurse -Force -ErrorAction Stop
             }
             catch {
                 Write-Warning "Could not remove staging folder: $staging - $($_.Exception.Message)"
